@@ -56,5 +56,5 @@ update msg model =
 view : Model -> Document Msg
 view model =
     { title = "Դատարկ մարդ"
-    , body = [ text "" ]
+    , body = [ text "դիվայս" ]
     }
