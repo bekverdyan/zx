@@ -7,7 +7,7 @@ import Html.Attributes exposing (..)
 
 
 main =
-    Browser.element
+    Browser.document
         { init = init
         , update = update
         , view = view
@@ -17,6 +17,12 @@ main =
 
 
 -- MODEL
+
+
+type alias Document msg =
+    { title : String
+    , body : List (Html msg)
+    }
 
 
 type alias Model =
@@ -47,6 +53,8 @@ update msg model =
 -- VIEW
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    text "gago"
+    { title = "Դատարկ մարդ"
+    , body = [ text "" ]
+    }
