@@ -24,6 +24,14 @@ type alias Name =
 
 
 type alias Pointer =
+    ( Daily, Total )
+
+
+type alias Daily =
+    Int
+
+
+type alias Total =
     Int
 
 
