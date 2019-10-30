@@ -6,6 +6,7 @@ import Device.Setting as Setting
 
 type alias Device =
     { id : Identifier
+    , name : Name
     , info : Info
     , counters : Counter.Counters
     , settings : Setting.Settings
@@ -20,6 +21,10 @@ newIdentifier : Identifier
 newIdentifier =
     -- FIXME should be sha1
     "foo"
+
+
+type alias Name =
+    String
 
 
 type alias Info =
