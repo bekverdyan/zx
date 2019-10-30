@@ -7,7 +7,7 @@ type alias Device =
     { id : DM.Identifier
     , info : Info
     , counters : List Counter
-    , channels : Setting
+    , settings : Settings
     }
 
 
@@ -27,8 +27,8 @@ type alias Pointer =
     Int
 
 
-type Setting
-    = Channels (List Ingredient)
+type Settings
+    = Channels ( Actual, Defined )
     | Config Parameters
 
 
@@ -36,6 +36,14 @@ type alias Parameters =
     { setter1 : Int
     , setter2 : Int
     }
+
+
+type alias Actual =
+    Int
+
+
+type alias Defined =
+    List Ingredient
 
 
 type Ingredient
