@@ -51,6 +51,38 @@ type alias Name =
 
 
 type alias Parameters =
-    { setter1 : Int
-    , setter2 : Int
+    { coinNominal : Int
+    , hopper : Faze
+    , hopperCoinNominal : Int
+    , hopperMode : Faze
+    , billValidator : Faze
+    , billNominal : List Int
+    , rfidReader1 : Faze
+    , rfidReader2 : Faze
+    , dispenser : Faze
+    , cardOut : Faze
+    , cardPrice : Int
+    , network : Faze
+    , deviceId : String
+    , serverCode : String
+    , bonusPercent : Int
+    , bonusThreshold : Int
     }
+
+
+type Faze
+    = Enabled
+    | Disabled
+    | CcTalk
+    | Pulse
+    | Mode_1
+    | Mode_2
+    | CRT_531
+    | TCD_820M
+    | ToGate
+    | FullOut
+    | None
+    | RS_485
+    | Can
+    | Ethernet
+    | WiFi
