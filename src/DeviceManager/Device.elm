@@ -39,7 +39,11 @@ type alias Parameters =
 
 
 type Ingredient
-    = Ingredient (List Component)
+    = Ingredient ( Index, List Component )
+
+
+type alias Index =
+    Int
 
 
 type Component
