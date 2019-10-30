@@ -63,7 +63,7 @@ type alias Unit =
 
 
 
--- TODO encoders and decoders
 -- TODO finish up Parameters
 -- TODO creators and setters
+-- TODO encoders and decoders
 -- TODO view
