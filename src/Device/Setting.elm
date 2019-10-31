@@ -27,10 +27,10 @@ type alias Index =
 
 
 type Ingredient
-    = Ingredient ( Resource, Setter )
+    = Ingredient ( Resource, Portion )
 
 
-type alias Setter =
+type alias Portion =
     Int
 
 
