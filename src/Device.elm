@@ -1,26 +1,22 @@
-module Device exposing (Device)
+module Device exposing (Device, encodeDevice)
 
 import Device.Counter as Counter
 import Device.Setting as Setting
+import Json.Decode as D
+import Json.Encode as E
 
 
 type alias Device =
     { id : Identifier
     , name : Name
     , info : Info
-    , counters : Counter.Counters
+    , counters : Counters
     , settings : Setting.Settings
     }
 
 
 type alias Identifier =
     String
-
-
-newIdentifier : Identifier
-newIdentifier =
-    -- FIXME should be sha1
-    "foo"
 
 
 type alias Name =
@@ -43,8 +39,75 @@ type alias SoftVersion =
     String
 
 
+type alias Counters =
+    List Counter.Counter
 
--- TODO finish up Parameters
--- TODO creators and setters
+
+
+--CREATOR
+
+
+newIdentifier : Identifier
+newIdentifier =
+    -- FIXME should be sha1
+    "foo"
+
+
+newDevice : Identifier -> Name -> Info -> Counters -> Setting.Settings -> Device
+newDevice id name info counters settings =
+    { id = id
+    , name = name
+    , info = info
+    , counters = counters
+    , settings = settings
+    }
+
+
+
+--ENCODE
+
+
+encodeDevice : Device -> E.Value
+encodeDevice device =
+    E.object
+        [ ( "id", E.string device.id )
+        , ( "name", E.string device.name )
+        , ( "info", encodeInfo device.info )
+        , ( "counters"
+          , E.list Counter.encodeCounter device.counters
+          )
+        ]
+
+
+encodeInfo : Info -> E.Value
+encodeInfo ( model, version, softVersion ) =
+    E.object
+        [ ( "model", E.string model )
+        , ( "version", E.string version )
+        , ( "softVersion", E.string softVersion )
+        ]
+
+
+
+--DECODE
+
+
+decodeDevice : D.Decoder Device
+decodeDevice =
+    D.map5 newDevice
+        (D.field "id" D.string)
+        (D.field "name" D.string)
+        (D.field "info" D.string)
+        (D.field "counters" D.list Counter.decodeCounter)
+        (D.field "settings" Setting.decodeSettings)
+
+
+decodeCounters : D.Decoder Counters
+decodeCounters =
+    D.list Counter.decodeCounter
+
+
+
 -- TODO encoders and decoders
+-- TODO creators and setters
 -- TODO view

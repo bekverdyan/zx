@@ -1,4 +1,4 @@
-module Device.Counter exposing (Counter, encodeCounter)
+module Device.Counter exposing (Counter, decodeCounter, encodeCounter)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -25,6 +25,20 @@ type alias Total =
 
 
 
+--CREATOR
+
+
+newPointer : Int -> Int -> Pointer
+newPointer daily total =
+    ( daily, total )
+
+
+newCounter : String -> Pointer -> Counter
+newCounter name pointer =
+    ( name, pointer )
+
+
+
 --ENCODE
 
 
@@ -36,14 +50,27 @@ encodeCounter counter =
         ]
 
 
-encodeName : Name -> E.Value
-encodeName name =
-    E.object [ ( "name", E.string name ) ]
-
-
 encodePointer : Pointer -> E.Value
 encodePointer pointer =
     E.object
         [ ( "daily", E.int (Tuple.first pointer) )
         , ( "total", E.int (Tuple.second pointer) )
         ]
+
+
+
+--DECODE
+
+
+decodeCounter : D.Decoder Counter
+decodeCounter =
+    D.map2 newCounter
+        (D.field "name" D.string)
+        (D.field "pointer" decodePointer)
+
+
+decodePointer : D.Decoder Pointer
+decodePointer =
+    D.map2 newPointer
+        (D.field "daily" D.int)
+        (D.field "total" D.int)
