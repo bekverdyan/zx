@@ -1,13 +1,16 @@
-module Device.Setting exposing (Settings(..))
+module Device.Setting exposing (Settings(..), decodeSettings)
+
+import Json.Decode as D
+import Json.Encode as E
+
+
+
+-- CHANNEL
 
 
 type Settings
     = Channels ( Actual, Defined )
     | Config Parameters
-
-
-
--- CHANNEL
 
 
 type alias Actual =
@@ -51,22 +54,32 @@ type alias Name =
 
 
 type alias Parameters =
+    { variables : Variables
+    , switches : Switches
+    }
+
+
+type alias Variables =
     { coinNominal : Int
-    , hopper : Faze
     , hopperCoinNominal : Int
-    , hopperMode : Faze
-    , billValidator : Faze
     , billNominal : List Int
-    , rfidReader1 : Faze
-    , rfidReader2 : Faze
-    , dispenser : Faze
-    , cardOut : Faze
     , cardPrice : Int
-    , network : Faze
     , deviceId : String
     , serverCode : String
     , bonusPercent : Int
     , bonusThreshold : Int
+    }
+
+
+type alias Switches =
+    { hopper : Faze
+    , hopperMode : Faze
+    , billValidator : Faze
+    , rfidReader1 : Faze
+    , rfidReader2 : Faze
+    , dispenser : Faze
+    , cardOut : Faze
+    , network : Faze
     }
 
 
@@ -86,3 +99,114 @@ type Faze
     | Can
     | Ethernet
     | WiFi
+
+
+
+--DECODE
+
+
+newChannels : Actual -> Defined -> Settings
+newChannels actual defined =
+    Channels ( actual, defined )
+
+
+decodeSettings : D.Decoder Settings
+decodeSettings =
+    D.oneOf [ decodeChannels, decodeConfig ]
+
+
+decodeChannels : D.Decoder Settings
+decodeChannels =
+    D.map2 newChannels
+        (D.field "actual" D.int)
+        (D.field "defined" D.list decodeComponent)
+
+
+newComponent : Component
+newComponent =
+    Component ( 0, [] )
+
+
+decodeComponent : D.Decoder Component
+decodeComponent =
+    D.map2 newComponent
+        (D.field "index" D.int)
+        (D.field "ingredients" D.list decodeIngredient)
+
+
+newIngredient : Resource -> Portion -> Ingredient
+newIngredient resource portion =
+    Ingredient ( resource, portion )
+
+
+newResource : Name -> Unit -> Resource
+newResource name unit =
+    Resource name unit
+
+
+decodeIngredient : D.Decoder Ingredient
+decodeIngredient =
+    D.map2 newIngredient
+        (D.field "resource" decodeResource)
+        (D.field "portion" D.int)
+
+
+decodeResource : D.Decoder Resource
+decodeResource =
+    D.map2 newResource
+        (D.field "name" D.string)
+        (D.field "unit" D.string)
+
+
+newConfig : Parameters -> Settings
+newConfig parameters =
+    Config parameters
+
+
+decodeConfig : D.Decoder Settings
+decodeConfig =
+    D.map newConfig
+        (D.field "parameters" decodeParameters)
+
+
+decodeParameters : D.Decoder Parameters
+decodeParameters =
+    D.map2 Parameters
+        (D.field "variables" decodeVariables)
+        (D.field "switches" decodeSwitches)
+
+
+decodeVariables : D.Decoder Variables
+decodeVariables =
+    D.map8 Variables
+        (D.field "coinNominal" D.int)
+        (D.field "hopperCoinNominal" D.int)
+        (D.field "billNominal" <| D.list D.int)
+        (D.field "cardPrice" D.int)
+        (D.field "deviceId" D.string)
+        (D.field "serverCode" D.string)
+        (D.field "bonusPercent" D.int)
+        (D.field "bonusThreshold" D.int)
+
+
+
+-- TODO Implement me
+--
+-- decodeSwitches : D.Decoder Switches
+-- decodeSwitches =
+--     D.map8 Switches
+--         (D.field "hopper" decodeFaze)
+--         (D.field "hopperMode" decodeFaze)
+--         (D.field "billValidator" decodeFaze)
+--         (D.field "rfidReader1" decodeFaze)
+--         (D.field "rfidReader2" decodeFaze)
+--         (D.field "dispenser" decodeFaze)
+--         (D.field "cardOut" decodeFaze)
+--         (D.field "network" decodeFaze)
+--
+--
+-- decodeHopper : D.Decoder Faze
+-- decodeHopper =
+--     D.oneOf []
+--
+-- decodeEnabled : D.Decoder Enabled

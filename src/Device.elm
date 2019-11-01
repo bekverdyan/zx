@@ -102,11 +102,6 @@ decodeDevice =
         (D.field "settings" Setting.decodeSettings)
 
 
-decodeCounters : D.Decoder Counters
-decodeCounters =
-    D.list Counter.decodeCounter
-
-
 
 -- TODO encoders and decoders
 -- TODO creators and setters
