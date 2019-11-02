@@ -5,12 +5,16 @@ import Json.Encode as E
 
 
 
--- CHANNEL
+-- MODEL
 
 
 type Settings
     = Channels ( Actual, Defined )
     | Config Parameters
+
+
+
+-- CHANNEL
 
 
 type alias Actual =
@@ -72,15 +76,47 @@ type alias Variables =
 
 
 type alias Switches =
-    { hopper : Faze
-    , hopperMode : Faze
-    , billValidator : Faze
-    , rfidReader1 : Faze
-    , rfidReader2 : Faze
-    , dispenser : Faze
-    , cardOut : Faze
-    , network : Faze
+    { hopper : Hopper
+    , hopperMode : HopperMode
+    , billValidator : BillValidator
+    , rfidReader1 : RfidReader1
+    , rfidReader2 : RfidReader2
+    , dispenser : Dispenser
+    , cardOut : CardOut
+    , network : Network
     }
+
+
+type Hopper
+    = Hopper Faze
+
+
+type HopperMode
+    = HopperMode Faze
+
+
+type BillValidator
+    = BillValidator Faze
+
+
+type RfidReader1
+    = RfidReader1 Faze
+
+
+type RfidReader2
+    = RfidReader2 Faze
+
+
+type Dispenser
+    = Dispenser Faze
+
+
+type CardOut
+    = CardOut Faze
+
+
+type Network
+    = Network Faze
 
 
 type Faze
@@ -99,6 +135,7 @@ type Faze
     | Can
     | Ethernet
     | WiFi
+    | NoFaze
 
 
 
