@@ -156,19 +156,19 @@ decodeChannels : D.Decoder Settings
 decodeChannels =
     D.map2 newChannels
         (D.field "actual" D.int)
-        (D.field "defined" D.list decodeComponent)
+        (D.field "defined" <| D.list decodeComponent)
 
 
-newComponent : Component
-newComponent =
-    Component ( 0, [] )
+newComponent : Int -> List Ingredient -> Component
+newComponent index ingredients =
+    Component ( index, ingredients )
 
 
 decodeComponent : D.Decoder Component
 decodeComponent =
     D.map2 newComponent
         (D.field "index" D.int)
-        (D.field "ingredients" D.list decodeIngredient)
+        (D.field "ingredients" <| D.list decodeIngredient)
 
 
 newIngredient : Resource -> Portion -> Ingredient
@@ -178,7 +178,7 @@ newIngredient resource portion =
 
 newResource : Name -> Unit -> Resource
 newResource name unit =
-    Resource name unit
+    Resource ( name, unit )
 
 
 decodeIngredient : D.Decoder Ingredient
