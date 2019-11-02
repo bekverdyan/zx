@@ -1,0 +1,39 @@
+-- COUNTERS
+changi-i hamar ka 10 hat counter bayc amen counter uni 2 hat sub counter,
+dranq en "total" u "daily" (avtoyi kilometraji pes)
+
+orinak:
+billCashCounter.total (sa chi zroyanum sarqi kyanqi yntacqum yndhanrapes)
+billCashCounter.daily (sa karan zroyacnen cankacac jamanak)
+
+
+Bill Cash Counter // kupyuropriomnikov yndunats poxi hashvich
+Coin Cash Counter // manetopriomnikov yndunats poxi hashvich
+Card Recharge Cash Counter // card-i veralicqavorman vra caxsvac poxi hashvich
+Card Dispense Cash Counter // vacharvac nor qarteri vra licqavorvac poxi hashvich
+Sold Card Cash Counter // vacharvac qarteri arjeqi hashvich
+Card Dispense Counter // vacharvac qarteri qanak
+Faulty Card Counter // brak qarteri hashvich
+Coin Hopper Coin Counter // zdachi tvac kopekneri qanak
+Coin Hopper Value Counter // zdachi tvac kopekneri gumar
+Bonus Cash counter // bonusi hashvich
+
+
+-- SETTINGS
+coin_nominal; //   Coin nominal
+hopper_enable; //   Coin Hopper enable (0 = disabled, 1 = ccTalk, 2 = Pulse)
+hopper_coin_nominal; //   Hopper coin nominal
+hopper_mode; // Hopper mode (0, 1)
+bill_validator_enable; //   Bill Validator enable (0 = disabled, 1 = ccTalk)
+bill_nominal[MAX_BILL]; //   Bill nominal (array of 10 elements)
+rfid_reader1; //   RFID reader1 enable (0 = disabled, 1 = enabled)
+rfid_reader2; //   RFID reader2 enable (0 = disabled, 1 = enabled)
+dispenser_enable; //   Dispenser enable (0 = disabled, 1 = CRT531, 2 = TCD-820M)
+card_out_mode; //   Card output mode (0 = to gate, 1 = full out)
+card_price; // Card price
+network; //   Network (0 = none, 1 = RS485, 2 = CAN, 3 = Ethernet, 4 = WiFi)
+device_id; //   Device ID for network
+server_code; //   Server code
+bonus_percent; // Bonus percent
+bonus_threshold; // Bonus threshold
+
