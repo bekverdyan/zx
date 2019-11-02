@@ -226,6 +226,138 @@ decodeVariables =
         (D.field "bonusThreshold" D.int)
 
 
+newHopper : Int -> Hopper
+newHopper value =
+    case value of
+        0 ->
+            Hopper Disabled
+
+        1 ->
+            Hopper CcTalk
+
+        2 ->
+            Hopper Pulse
+
+        _ ->
+            Hopper NoFaze
+
+
+decodeHopper : D.Decoder Hopper
+decodeHopper =
+    D.map newHopper (D.field "hopper" D.int)
+
+
+newHopperMode : Int -> HopperMode
+newHopperMode value =
+    case value of
+        0 ->
+            HopperMode Mode_1
+
+        1 ->
+            HopperMode Mode_2
+
+        _ ->
+            HopperMode NoFaze
+
+
+decodeHopperMode : D.Decoder HopperMode
+decodeHopperMode =
+    D.map newHopperMode (D.field "hopperMode" D.int)
+
+
+newBillValidator : Int -> BillValidator
+newBillValidator value =
+    case value of
+        0 ->
+            BillValidator Disabled
+
+        1 ->
+            BillValidator CcTalk
+
+        _ ->
+            BillValidator NoFaze
+
+
+decodeBillValidator : D.Decoder BillValidator
+decodeBillValidator =
+    D.map newBillValidator (D.field "billValidator" D.int)
+
+
+newRfidReader1 : Int -> RfidReader1
+newRfidReader1 value =
+    case value of
+        0 ->
+            RfidReader1 Disabled
+
+        1 ->
+            RfidReader1 Enabled
+
+        _ ->
+            RfidReader1 NoFaze
+
+
+decodeRfidReader1 : D.Decoder RfidReader1
+decodeRfidReader1 =
+    D.map newRfidReader1 (D.field "rfidReader1" D.int)
+
+
+newRfidReader2 : Int -> RfidReader2
+newRfidReader2 value =
+    case value of
+        0 ->
+            RfidReader2 Disabled
+
+        1 ->
+            RfidReader2 Enabled
+
+        _ ->
+            RfidReader2 NoFaze
+
+
+decodeRfidReader2 : D.Decoder RfidReader2
+decodeRfidReader2 =
+    D.map newRfidReader2 (D.field "rfidReader2" D.int)
+
+
+newDispenser : Int -> Dispenser
+newDispenser value =
+    case value of
+        0 ->
+            Dispenser Disabled
+
+        1 ->
+            Dispenser CRT_531
+
+        2 ->
+            Dispenser TCD_820M
+
+        _ ->
+            Dispenser NoFaze
+
+
+decodeDispenser : D.Decoder Dispenser
+decodeDispenser =
+    D.map newDispenser (D.field "dispenser" D.int)
+
+
+newCardOut : Int -> CardOut
+newCardOut value =
+    case value of
+        0 ->
+            CardOut ToGate
+
+        1 ->
+            CardOut FullOut
+
+        _ ->
+            CardOut NoFaze
+
+
+decodeCardOut : D.Decoder CardOut
+decodeCardOut =
+    D.map newCardOut (D.field "cardOut" D.int)
+
+
 newNetwork : Int -> Network
 newNetwork value =
     case value of
@@ -248,101 +380,9 @@ newNetwork value =
             Network NoFaze
 
 
-newCardOut : Int -> CardOut
-newCardOut value =
-    case value of
-        0 ->
-            CardOut ToGate
-
-        1 ->
-            CardOut FullOut
-
-        _ ->
-            CardOut NoFaze
-
-
-newDispenser : Int -> Dispenser
-newDispenser value =
-    case value of
-        0 ->
-            Dispenser Disabled
-
-        1 ->
-            Dispenser CRT_531
-
-        2 ->
-            Dispenser TCD_820M
-
-        _ ->
-            Dispenser NoFaze
-
-
-newRfidReader1 : Int -> RfidReader1
-newRfidReader1 value =
-    case value of
-        0 ->
-            RfidReader1 Disabled
-
-        1 ->
-            RfidReader1 Enabled
-
-        _ ->
-            RfidReader1 NoFaze
-
-
-newRfidReader2 : Int -> RfidReader2
-newRfidReader2 value =
-    case value of
-        0 ->
-            RfidReader2 Disabled
-
-        1 ->
-            RfidReader2 Enabled
-
-        _ ->
-            RfidReader2 NoFaze
-
-
-newBillValidator : Int -> BillValidator
-newBillValidator value =
-    case value of
-        0 ->
-            BillValidator Disabled
-
-        1 ->
-            BillValidator CcTalk
-
-        _ ->
-            BillValidator NoFaze
-
-
-newHopperMode : Int -> HopperMode
-newHopperMode value =
-    case value of
-        0 ->
-            HopperMode Mode_1
-
-        1 ->
-            HopperMode Mode_2
-
-        _ ->
-            HopperMode NoFaze
-
-
-newHopper : Int -> Hopper
-newHopper value =
-    case value of
-        0 ->
-            Hopper Disabled
-
-        1 ->
-            Hopper CcTalk
-
-        2 ->
-            Hopper Pulse
-
-        _ ->
-            Hopper NoFaze
+decodeNetwork : D.Decoder Network
+decodeNetwork =
+    D.map newNetwork (D.field "network" D.int)
 
 
 decodeSwitches : D.Decoder Switches
@@ -356,43 +396,3 @@ decodeSwitches =
         decodeDispenser
         decodeCardOut
         decodeNetwork
-
-
-decodeHopper : D.Decoder Hopper
-decodeHopper =
-    D.map newHopper (D.field "hopper" D.int)
-
-
-decodeHopperMode : D.Decoder HopperMode
-decodeHopperMode =
-    D.map newHopperMode (D.field "hopperMode" D.int)
-
-
-decodeBillValidator : D.Decoder BillValidator
-decodeBillValidator =
-    D.map newBillValidator (D.field "billValidator" D.int)
-
-
-decodeRfidReader1 : D.Decoder RfidReader1
-decodeRfidReader1 =
-    D.map newRfidReader1 (D.field "rfidReader1" D.int)
-
-
-decodeRfidReader2 : D.Decoder RfidReader2
-decodeRfidReader2 =
-    D.map newRfidReader2 (D.field "rfidReader2" D.int)
-
-
-decodeDispenser : D.Decoder Dispenser
-decodeDispenser =
-    D.map newDispenser (D.field "dispenser" D.int)
-
-
-decodeCardOut : D.Decoder CardOut
-decodeCardOut =
-    D.map newCardOut (D.field "cardOut" D.int)
-
-
-decodeNetwork : D.Decoder Network
-decodeNetwork =
-    D.map newNetwork (D.field "network" D.int)
