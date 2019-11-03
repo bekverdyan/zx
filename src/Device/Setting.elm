@@ -396,3 +396,59 @@ decodeSwitches =
         decodeDispenser
         decodeCardOut
         decodeNetwork
+
+
+
+-- ENCODE
+
+
+fazeToNumber : Faze -> Maybe Int
+fazeToNumber faze =
+    case faze of
+        Enabled ->
+            Just 1
+
+        Disabled ->
+            Just 0
+
+        CcTalk ->
+            Just 1
+
+        Pulse ->
+            Just 2
+
+        Mode_1 ->
+            Just 0
+
+        Mode_2 ->
+            Just 1
+
+        CRT_531 ->
+            Just 1
+
+        TCD_820M ->
+            Just 2
+
+        ToGate ->
+            Just 0
+
+        FullOut ->
+            Just 1
+
+        None ->
+            Just 0
+
+        RS_485 ->
+            Just 1
+
+        Can ->
+            Just 2
+
+        Ethernet ->
+            Just 3
+
+        WiFi ->
+            Just 4
+
+        NoFaze ->
+            Nothing
