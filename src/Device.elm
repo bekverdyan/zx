@@ -97,9 +97,24 @@ decodeDevice =
     D.map5 newDevice
         (D.field "id" D.string)
         (D.field "name" D.string)
-        (D.field "info" D.string)
-        (D.field "counters" D.list Counter.decodeCounter)
+        (D.field "info" decodeInfo)
+        (D.field "counters" <|
+            D.list Counter.decodeCounter
+        )
         (D.field "settings" Setting.decodeSettings)
+
+
+newInfo : Model -> Version -> SoftVersion -> Info
+newInfo model version softVersion =
+    ( model, version, softVersion )
+
+
+decodeInfo : D.Decoder Info
+decodeInfo =
+    D.map3 newInfo
+        (D.field "model" D.string)
+        (D.field "version" D.string)
+        (D.field "softVersion" D.string)
 
 
 
