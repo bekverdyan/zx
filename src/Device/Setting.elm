@@ -400,6 +400,146 @@ decodeSwitches =
 
 
 -- ENCODE
+-- encodeHopper : Hopper -> E.Value
+-- encodeHopper hopper =
+--   let
+--       value = fazeToNumber
+--   in
+--   case fazeToNumber =
+-- TODO finish me..
+
+
+encodeSwitches : Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> E.Value
+encodeSwitches hopper hopperMode billValidator rfidReader1 rfidReader2 dispenser cardOut network =
+    E.object
+        [ ( "hopper", E.int hopper )
+        , ( "hommerMode", E.int hopperMode )
+        , ( "billValidator", E.int billValidator )
+        , ( "rfidReader1", E.int rfidReader1 )
+        , ( "rfidReader2", E.int rfidReader2 )
+        , ( "dispenser", E.int dispenser )
+        , ( "cardOut", E.int cardOut )
+        , ( "network", E.int network )
+        ]
+
+
+numberOfHopperFaze : Hopper -> Maybe Int
+numberOfHopperFaze hopper =
+    case hopper of
+        Hopper Disabled ->
+            Just 0
+
+        Hopper CcTalk ->
+            Just 1
+
+        Hopper Pulse ->
+            Just 2
+
+        _ ->
+            Nothing
+
+
+numberOfHopperModeFaze : HopperMode -> Maybe Int
+numberOfHopperModeFaze hopperMode =
+    case hopperMode of
+        HopperMode Mode_1 ->
+            Just 0
+
+        HopperMode Mode_2 ->
+            Just 1
+
+        _ ->
+            Nothing
+
+
+numberOfBillValidatorFaze : BillValidator -> Maybe Int
+numberOfBillValidatorFaze billValidator =
+    case billValidator of
+        BillValidator Disabled ->
+            Just 0
+
+        BillValidator CcTalk ->
+            Just 1
+
+        _ ->
+            Nothing
+
+
+numberOfRfidReader1Faze : RfidReader1 -> Maybe Int
+numberOfRfidReader1Faze reader =
+    case reader of
+        RfidReader1 Disabled ->
+            Just 0
+
+        RfidReader1 Enabled ->
+            Just 1
+
+        _ ->
+            Nothing
+
+
+numberOfRfidReader2Faze : RfidReader2 -> Maybe Int
+numberOfRfidReader2Faze reader =
+    case reader of
+        RfidReader2 Disabled ->
+            Just 0
+
+        RfidReader2 Enabled ->
+            Just 1
+
+        _ ->
+            Nothing
+
+
+numberOfDispenserFaze : Dispenser -> Maybe Int
+numberOfDispenserFaze dispenser =
+    case dispenser of
+        Dispenser Disabled ->
+            Just 0
+
+        Dispenser CRT_531 ->
+            Just 1
+
+        Dispenser TCD_820M ->
+            Just 2
+
+        _ ->
+            Nothing
+
+
+numberOfCardOutFaze : CardOut -> Maybe Int
+numberOfCardOutFaze cardOut =
+    case cardOut of
+        CardOut ToGate ->
+            Just 0
+
+        CardOut FullOut ->
+            Just 1
+
+        _ ->
+            Nothing
+
+
+numberOfNetworkFaze : Network -> Maybe Int
+numberOfNetworkFaze network =
+    case network of
+        Network None ->
+            Just 0
+
+        Network RS_485 ->
+            Just 1
+
+        Network Can ->
+            Just 2
+
+        Network Ethernet ->
+            Just 3
+
+        Network WiFi ->
+            Just 4
+
+        _ ->
+            Nothing
 
 
 fazeToNumber : Faze -> Maybe Int
