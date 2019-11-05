@@ -403,6 +403,21 @@ decodeSwitches =
 -- ENCODE
 
 
+encodeVariables : Variables -> E.Value
+encodeVariables variables =
+    E.object
+        [ ( "coinNominal", E.int variables.coinNominal )
+        , ( "hopperCoinNominal"
+          , E.int variables.hopperCoinNominal
+          )
+        , ( "billNominal", E.list E.int variables.billNominal )
+        , ( "cardPrice", E.int variables.cardPrice )
+        , ( "deviceId", E.string variables.deviceId )
+        , ( "serverCode", E.string variables.serverCode )
+        , ( "bonusPercent", E.int variables.bonusPercent )
+        ]
+
+
 encodeHopperFaze : Hopper -> E.Value
 encodeHopperFaze hopper =
     case hopper of
@@ -545,6 +560,5 @@ encodeSwitches switches =
 
 
 
--- TODO encodeVariables
 -- TODO encodeParameters
 -- TODO encodeSettings
