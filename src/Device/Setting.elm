@@ -1,4 +1,4 @@
-module Device.Setting exposing (Settings(..), decodeSettings)
+module Device.Setting exposing (Settings(..), decodeSettings, encodeSettings)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -603,13 +603,16 @@ encodeChannels channels =
         ]
 
 
+encodeSettings : Settings -> E.Value
+encodeSettings settings =
+    let
+        value =
+            case settings of
+                Channels ( actual, defined ) ->
+                    encodeChannels ( actual, defined )
 
--- encodeConfig : Settings -> E.Value
--- encodeConfig settings =
---   let
---       case settings of
---         Channels channels ->
---           value = encodedConfig
---   E.object
---     [ ("parameters", encodeParameters settings.config) ]
--- TODO encodeSettings
+                Config parameters ->
+                    encodeParameters parameters
+    in
+    E.object
+        [ ( "settings", value ) ]
