@@ -559,6 +559,13 @@ encodeSwitches switches =
         ]
 
 
+encodeParameters : Parameters -> E.Value
+encodeParameters parameters =
+    E.object
+        [ ( "variables", encodeVariables parameters.variables )
+        , ( "switches", encodeSwitches parameters.switches )
+        ]
 
--- TODO encodeParameters
+
+
 -- TODO encodeSettings
