@@ -2,6 +2,7 @@ module Device.Setting exposing (Settings(..), decodeSettings)
 
 import Json.Decode as D
 import Json.Encode as E
+import Json.Encode.Extra as EncodeExtra
 
 
 
@@ -400,195 +401,150 @@ decodeSwitches =
 
 
 -- ENCODE
--- encodeHopper : Hopper -> E.Value
--- encodeHopper hopper =
---   let
---       value = fazeToNumber
---   in
---   case fazeToNumber =
--- TODO finish me..
 
 
-encodeSwitches : Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> E.Value
-encodeSwitches hopper hopperMode billValidator rfidReader1 rfidReader2 dispenser cardOut network =
+encodeHopperFaze : Hopper -> E.Value
+encodeHopperFaze hopper =
+    case hopper of
+        Hopper Disabled ->
+            E.int 0
+
+        Hopper CcTalk ->
+            E.int 1
+
+        Hopper Pulse ->
+            E.int 2
+
+        _ ->
+            E.null
+
+
+encodeHopperModeFaze : HopperMode -> E.Value
+encodeHopperModeFaze hopperMode =
+    case hopperMode of
+        HopperMode Mode_1 ->
+            E.int 0
+
+        HopperMode Mode_2 ->
+            E.int 1
+
+        _ ->
+            E.null
+
+
+encodeBillValidatorFaze : BillValidator -> E.Value
+encodeBillValidatorFaze billValidator =
+    case billValidator of
+        BillValidator Disabled ->
+            E.int 0
+
+        BillValidator CcTalk ->
+            E.int 1
+
+        _ ->
+            E.null
+
+
+encodeRfidReader1Faze : RfidReader1 -> E.Value
+encodeRfidReader1Faze reader =
+    case reader of
+        RfidReader1 Disabled ->
+            E.int 0
+
+        RfidReader1 Enabled ->
+            E.int 1
+
+        _ ->
+            E.null
+
+
+encodeRfidReader2Faze : RfidReader2 -> E.Value
+encodeRfidReader2Faze reader =
+    case reader of
+        RfidReader2 Disabled ->
+            E.int 0
+
+        RfidReader2 Enabled ->
+            E.int 1
+
+        _ ->
+            E.null
+
+
+encodeDispenserFaze : Dispenser -> E.Value
+encodeDispenserFaze dispenser =
+    case dispenser of
+        Dispenser Disabled ->
+            E.int 0
+
+        Dispenser CRT_531 ->
+            E.int 1
+
+        Dispenser TCD_820M ->
+            E.int 2
+
+        _ ->
+            E.null
+
+
+encodeCardOutFaze : CardOut -> E.Value
+encodeCardOutFaze cardOut =
+    case cardOut of
+        CardOut ToGate ->
+            E.int 0
+
+        CardOut FullOut ->
+            E.int 1
+
+        _ ->
+            E.null
+
+
+encodeNetworkFaze : Network -> E.Value
+encodeNetworkFaze network =
+    case network of
+        Network None ->
+            E.int 0
+
+        Network RS_485 ->
+            E.int 1
+
+        Network Can ->
+            E.int 2
+
+        Network Ethernet ->
+            E.int 3
+
+        Network WiFi ->
+            E.int 4
+
+        _ ->
+            E.null
+
+
+encodeSwitches : Switches -> E.Value
+encodeSwitches switches =
     E.object
-        [ ( "hopper", E.int hopper )
-        , ( "hommerMode", E.int hopperMode )
-        , ( "billValidator", E.int billValidator )
-        , ( "rfidReader1", E.int rfidReader1 )
-        , ( "rfidReader2", E.int rfidReader2 )
-        , ( "dispenser", E.int dispenser )
-        , ( "cardOut", E.int cardOut )
-        , ( "network", E.int network )
+        [ ( "hopper", encodeHopperFaze switches.hopper )
+        , ( "hopperMode"
+          , encodeHopperModeFaze switches.hopperMode
+          )
+        , ( "billValidator"
+          , encodeBillValidatorFaze switches.billValidator
+          )
+        , ( "rfidReader1"
+          , encodeRfidReader1Faze switches.rfidReader1
+          )
+        , ( "rfidReader2"
+          , encodeRfidReader2Faze switches.rfidReader2
+          )
+        , ( "dispenser", encodeDispenserFaze switches.dispenser )
+        , ( "cardOut", encodeCardOutFaze switches.cardOut )
+        , ( "network", encodeNetworkFaze switches.network )
         ]
 
 
-numberOfHopperFaze : Hopper -> Maybe Int
-numberOfHopperFaze hopper =
-    case hopper of
-        Hopper Disabled ->
-            Just 0
 
-        Hopper CcTalk ->
-            Just 1
-
-        Hopper Pulse ->
-            Just 2
-
-        _ ->
-            Nothing
-
-
-numberOfHopperModeFaze : HopperMode -> Maybe Int
-numberOfHopperModeFaze hopperMode =
-    case hopperMode of
-        HopperMode Mode_1 ->
-            Just 0
-
-        HopperMode Mode_2 ->
-            Just 1
-
-        _ ->
-            Nothing
-
-
-numberOfBillValidatorFaze : BillValidator -> Maybe Int
-numberOfBillValidatorFaze billValidator =
-    case billValidator of
-        BillValidator Disabled ->
-            Just 0
-
-        BillValidator CcTalk ->
-            Just 1
-
-        _ ->
-            Nothing
-
-
-numberOfRfidReader1Faze : RfidReader1 -> Maybe Int
-numberOfRfidReader1Faze reader =
-    case reader of
-        RfidReader1 Disabled ->
-            Just 0
-
-        RfidReader1 Enabled ->
-            Just 1
-
-        _ ->
-            Nothing
-
-
-numberOfRfidReader2Faze : RfidReader2 -> Maybe Int
-numberOfRfidReader2Faze reader =
-    case reader of
-        RfidReader2 Disabled ->
-            Just 0
-
-        RfidReader2 Enabled ->
-            Just 1
-
-        _ ->
-            Nothing
-
-
-numberOfDispenserFaze : Dispenser -> Maybe Int
-numberOfDispenserFaze dispenser =
-    case dispenser of
-        Dispenser Disabled ->
-            Just 0
-
-        Dispenser CRT_531 ->
-            Just 1
-
-        Dispenser TCD_820M ->
-            Just 2
-
-        _ ->
-            Nothing
-
-
-numberOfCardOutFaze : CardOut -> Maybe Int
-numberOfCardOutFaze cardOut =
-    case cardOut of
-        CardOut ToGate ->
-            Just 0
-
-        CardOut FullOut ->
-            Just 1
-
-        _ ->
-            Nothing
-
-
-numberOfNetworkFaze : Network -> Maybe Int
-numberOfNetworkFaze network =
-    case network of
-        Network None ->
-            Just 0
-
-        Network RS_485 ->
-            Just 1
-
-        Network Can ->
-            Just 2
-
-        Network Ethernet ->
-            Just 3
-
-        Network WiFi ->
-            Just 4
-
-        _ ->
-            Nothing
-
-
-fazeToNumber : Faze -> Maybe Int
-fazeToNumber faze =
-    case faze of
-        Enabled ->
-            Just 1
-
-        Disabled ->
-            Just 0
-
-        CcTalk ->
-            Just 1
-
-        Pulse ->
-            Just 2
-
-        Mode_1 ->
-            Just 0
-
-        Mode_2 ->
-            Just 1
-
-        CRT_531 ->
-            Just 1
-
-        TCD_820M ->
-            Just 2
-
-        ToGate ->
-            Just 0
-
-        FullOut ->
-            Just 1
-
-        None ->
-            Just 0
-
-        RS_485 ->
-            Just 1
-
-        Can ->
-            Just 2
-
-        Ethernet ->
-            Just 3
-
-        WiFi ->
-            Just 4
-
-        NoFaze ->
-            Nothing
+-- TODO encodeVariables
+-- TODO encodeParameters
+-- TODO encodeSettings
