@@ -204,7 +204,7 @@ newConfig parameters =
 decodeConfig : D.Decoder Settings
 decodeConfig =
     D.map newConfig
-        (D.field "parameters" decodeParameters)
+        decodeParameters
 
 
 decodeParameters : D.Decoder Parameters
@@ -614,5 +614,4 @@ encodeSettings settings =
                 Config parameters ->
                     encodeParameters parameters
     in
-    E.object
-        [ ( "settings", value ) ]
+    value
