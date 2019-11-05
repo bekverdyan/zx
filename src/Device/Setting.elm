@@ -23,27 +23,27 @@ type alias Actual =
 
 
 type alias Defined =
-    List Component
+    List Channel
 
 
-type Component
-    = Component ( Index, List Ingredient )
+type alias Channel =
+    ( Index, List Ingredient )
 
 
 type alias Index =
     Int
 
 
-type Ingredient
-    = Ingredient ( Resource, Portion )
+type alias Ingredient =
+    ( Resource, Portion )
 
 
 type alias Portion =
     Int
 
 
-type Resource
-    = Resource ( Name, Unit )
+type alias Resource =
+    ( Name, Unit )
 
 
 type alias Unit =
@@ -160,12 +160,12 @@ decodeChannels =
         (D.field "defined" <| D.list decodeComponent)
 
 
-newComponent : Int -> List Ingredient -> Component
+newComponent : Int -> List Ingredient -> Channel
 newComponent index ingredients =
-    Component ( index, ingredients )
+    ( index, ingredients )
 
 
-decodeComponent : D.Decoder Component
+decodeComponent : D.Decoder Channel
 decodeComponent =
     D.map2 newComponent
         (D.field "index" D.int)
@@ -174,12 +174,12 @@ decodeComponent =
 
 newIngredient : Resource -> Portion -> Ingredient
 newIngredient resource portion =
-    Ingredient ( resource, portion )
+    ( resource, portion )
 
 
 newResource : Name -> Unit -> Resource
 newResource name unit =
-    Resource ( name, unit )
+    ( name, unit )
 
 
 decodeIngredient : D.Decoder Ingredient
@@ -567,5 +567,49 @@ encodeParameters parameters =
         ]
 
 
+encodeResource : Resource -> E.Value
+encodeResource resource =
+    E.object
+        [ ( "name", E.string <| Tuple.first resource ) ]
 
+
+encodeIngredient : Ingredient -> E.Value
+encodeIngredient ingredient =
+    E.object
+        [ ( "resource", encodeResource <| Tuple.first ingredient )
+        , ( "portion", E.int <| Tuple.second ingredient )
+        ]
+
+
+encodeChannel : Channel -> E.Value
+encodeChannel channel =
+    E.object
+        [ ( String.fromInt <| Tuple.first channel
+          , E.list encodeIngredient <| Tuple.second channel
+          )
+        ]
+
+
+encodeDefined : Defined -> E.Value
+encodeDefined defined =
+    E.list encodeChannel defined
+
+
+encodeChannels : ( Actual, Defined ) -> E.Value
+encodeChannels channels =
+    E.object
+        [ ( "actual", E.int <| Tuple.first channels )
+        , ( "defined", encodeDefined <| Tuple.second channels )
+        ]
+
+
+
+-- encodeConfig : Settings -> E.Value
+-- encodeConfig settings =
+--   let
+--       case settings of
+--         Channels channels ->
+--           value = encodedConfig
+--   E.object
+--     [ ("parameters", encodeParameters settings.config) ]
 -- TODO encodeSettings
