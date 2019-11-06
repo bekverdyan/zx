@@ -2,6 +2,5 @@
 IoT device management system
 
 ### Contributing
-#### Commit messages
+- **commit messages**: Conventional Commits
 
-Use Conventional Commits
