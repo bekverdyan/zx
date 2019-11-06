@@ -1,4 +1,4 @@
-module Device exposing (Device, encodeDevice)
+module Device exposing (Device, decodeDevice, encodeDevice)
 
 import Device.Counter as Counter
 import Device.Setting as Setting
@@ -10,7 +10,7 @@ type alias Device =
     { id : Identifier
     , name : Name
     , info : Info
-    , counters : Counters
+    , counters : Counter.Counters
     , settings : Setting.Settings
     }
 
@@ -39,12 +39,8 @@ type alias SoftVersion =
     String
 
 
-type alias Counters =
-    List Counter.Counter
 
-
-
---CREATOR
+--CREATE
 
 
 newIdentifier : Identifier
@@ -53,13 +49,33 @@ newIdentifier =
     "foo"
 
 
-newDevice : Identifier -> Name -> Info -> Counters -> Setting.Settings -> Device
-newDevice id name info counters settings =
-    { id = id
-    , name = name
-    , info = info
-    , counters = counters
-    , settings = settings
+newName : Name
+newName =
+    ""
+
+
+newModel : Model
+newModel =
+    ""
+
+
+newVersion : Version
+newVersion =
+    ""
+
+
+newSoftVersion : SoftVersion
+newSoftVersion =
+    ""
+
+
+newDevice : Device
+newDevice =
+    { id = newIdentifier
+    , name = newName
+    , info = newInfo newModel newVersion newSoftVersion
+    , counters = Counter.newCounters
+    , settings = Setting.newConfig
     }
 
 
@@ -119,6 +135,4 @@ decodeInfo =
 
 
 
--- TODO encoders and decoders
--- TODO creators and setters
 -- TODO view
