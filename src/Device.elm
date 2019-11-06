@@ -76,6 +76,7 @@ encodeDevice device =
         , ( "counters"
           , E.list Counter.encodeCounter device.counters
           )
+        , ( "settings", Setting.encodeSettings device.settings )
         ]
 
 
