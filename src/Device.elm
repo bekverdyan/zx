@@ -73,8 +73,8 @@ newDevice : Device
 newDevice =
     { id = newIdentifier
     , name = newName
-    , info = newInfo newModel newVersion newSoftVersion
-    , counters = Counter.newCounters
+    , info = infoOf newModel newVersion newSoftVersion
+    , counters = Counter.newCounters []
     , settings = Setting.newConfig
     }
 
@@ -111,7 +111,7 @@ encodeInfo ( model, version, softVersion ) =
 
 decodeDevice : D.Decoder Device
 decodeDevice =
-    D.map5 newDevice
+    D.map5 Device
         (D.field "id" D.string)
         (D.field "name" D.string)
         (D.field "info" decodeInfo)
@@ -121,14 +121,14 @@ decodeDevice =
         (D.field "settings" Setting.decodeSettings)
 
 
-newInfo : Model -> Version -> SoftVersion -> Info
-newInfo model version softVersion =
+infoOf : Model -> Version -> SoftVersion -> Info
+infoOf model version softVersion =
     ( model, version, softVersion )
 
 
 decodeInfo : D.Decoder Info
 decodeInfo =
-    D.map3 newInfo
+    D.map3 infoOf
         (D.field "model" D.string)
         (D.field "version" D.string)
         (D.field "softVersion" D.string)
