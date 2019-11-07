@@ -1,4 +1,4 @@
-module Device exposing (Device, decodeDevice, encodeDevice)
+module Device exposing (Device, decodeDevice, encodeDevice, newDevice)
 
 import Device.Counter as Counter
 import Device.Setting as Setting
