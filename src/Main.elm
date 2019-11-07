@@ -2,6 +2,7 @@ module Main exposing (Model, init, main)
 
 import Browser
 import Debug
+import Device as Device
 import Html exposing (..)
 import Html.Attributes exposing (..)
 
@@ -26,12 +27,14 @@ type alias Document msg =
 
 
 type alias Model =
-    { carwashes : Int }
+    { carwashes : Int
+    , device : Device.Device
+    }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model 0, Cmd.none )
+    ( Model 0 Device.newDevice, Cmd.none )
 
 
 type Msg
