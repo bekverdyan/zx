@@ -1,4 +1,4 @@
-module Device.Setting exposing (Settings(..), decoder, encode, newChannels, newConfig)
+module Device.Setting exposing (Settings, decoder, encode, newChannels, newConfig)
 
 import Json.Decode as D
 import Json.Encode as E
