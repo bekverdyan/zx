@@ -1,4 +1,4 @@
-module Device.Counter exposing (Counters, decodeCounter, encodeCounter, newCounters)
+module Device.Counter exposing (Counters, decoder, encode, newCounters)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -61,6 +61,11 @@ newCounters names =
 --ENCODE
 
 
+encode : Counters -> E.Value
+encode counters =
+    E.list encodeCounter counters
+
+
 encodeCounter : Counter -> E.Value
 encodeCounter counter =
     E.object
@@ -79,6 +84,11 @@ encodePointer pointer =
 
 
 --DECODE
+
+
+decoder : D.Decoder Counters
+decoder =
+    D.list decodeCounter
 
 
 decodeCounter : D.Decoder Counter

@@ -1,4 +1,4 @@
-module Device exposing (Device, decodeDevice, encodeDevice, newDevice)
+module Device exposing (Device, decoder, encode, newDevice)
 
 import Device.Counter as Counter
 import Device.Setting as Setting
@@ -83,16 +83,14 @@ newDevice =
 --ENCODE
 
 
-encodeDevice : Device -> E.Value
-encodeDevice device =
+encode : Device -> E.Value
+encode device =
     E.object
         [ ( "id", E.string device.id )
         , ( "name", E.string device.name )
         , ( "info", encodeInfo device.info )
-        , ( "counters"
-          , E.list Counter.encodeCounter device.counters
-          )
-        , ( "settings", Setting.encodeSettings device.settings )
+        , ( "counters", Counter.encode device.counters )
+        , ( "settings", Setting.encode device.settings )
         ]
 
 
@@ -109,16 +107,14 @@ encodeInfo ( model, version, softVersion ) =
 --DECODE
 
 
-decodeDevice : D.Decoder Device
-decodeDevice =
+decoder : D.Decoder Device
+decoder =
     D.map5 Device
         (D.field "id" D.string)
         (D.field "name" D.string)
         (D.field "info" decodeInfo)
-        (D.field "counters" <|
-            D.list Counter.decodeCounter
-        )
-        (D.field "settings" Setting.decodeSettings)
+        (D.field "counters" Counter.decoder)
+        (D.field "settings" Setting.decoder)
 
 
 infoOf : Model -> Version -> SoftVersion -> Info

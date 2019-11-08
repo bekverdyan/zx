@@ -1,4 +1,4 @@
-module Device.Setting exposing (Settings(..), decodeSettings, encodeSettings, newChannels, newConfig)
+module Device.Setting exposing (Settings(..), decoder, encode, newChannels, newConfig)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -195,8 +195,8 @@ channelsOf actual defined =
     Channels ( actual, defined )
 
 
-decodeSettings : D.Decoder Settings
-decodeSettings =
+decoder : D.Decoder Settings
+decoder =
     D.oneOf [ decodeChannels, decodeConfig ]
 
 
@@ -650,8 +650,8 @@ encodeChannels channels =
         ]
 
 
-encodeSettings : Settings -> E.Value
-encodeSettings settings =
+encode : Settings -> E.Value
+encode settings =
     let
         value =
             case settings of
