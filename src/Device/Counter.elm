@@ -103,3 +103,7 @@ decodePointer =
     D.map2 createPointer
         (D.field "daily" D.int)
         (D.field "total" D.int)
+
+
+
+-- TODO mappers (should be used only with some setting changests)

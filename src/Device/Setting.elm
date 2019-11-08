@@ -661,3 +661,7 @@ encode settings =
                     encodeParameters parameters
     in
     value
+
+
+
+-- TODO mappers
