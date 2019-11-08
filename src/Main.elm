@@ -34,7 +34,12 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model 0 Device.newDevice, Cmd.none )
+    ( Model
+        0
+      <|
+        Device.newDevice Device.Washbox
+    , Cmd.none
+    )
 
 
 type Msg

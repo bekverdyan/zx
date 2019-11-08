@@ -1,4 +1,4 @@
-module Device exposing (Device, decoder, encode, newDevice)
+module Device exposing (Device, DeviceType(..), decoder, encode, newDevice)
 
 import Device.Counter as Counter
 import Device.Setting as Setting
@@ -39,6 +39,11 @@ type alias SoftVersion =
     String
 
 
+type DeviceType
+    = Washbox
+    | Exchange
+
+
 
 --CREATE
 
@@ -69,13 +74,22 @@ newSoftVersion =
     ""
 
 
-newDevice : Device
-newDevice =
+newDevice : DeviceType -> Device
+newDevice deviceType =
+    let
+        settings =
+            case deviceType of
+                Washbox ->
+                    Setting.newChannels 0
+
+                Exchange ->
+                    Setting.newConfig
+    in
     { id = newIdentifier
     , name = newName
     , info = infoOf newModel newVersion newSoftVersion
     , counters = Counter.newCounters []
-    , settings = Setting.newConfig
+    , settings = settings
     }
 
 
