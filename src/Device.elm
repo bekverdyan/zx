@@ -1,4 +1,4 @@
-module Device exposing (Device, encodeDevice)
+module Device exposing (Device, DeviceType(..), decoder, encode, newDevice)
 
 import Device.Counter as Counter
 import Device.Setting as Setting
@@ -10,7 +10,7 @@ type alias Device =
     { id : Identifier
     , name : Name
     , info : Info
-    , counters : Counters
+    , counters : Counter.Counters
     , settings : Setting.Settings
     }
 
@@ -39,12 +39,13 @@ type alias SoftVersion =
     String
 
 
-type alias Counters =
-    List Counter.Counter
+type DeviceType
+    = Washbox
+    | Exchange
 
 
 
---CREATOR
+--CREATE
 
 
 newIdentifier : Identifier
@@ -53,12 +54,41 @@ newIdentifier =
     "foo"
 
 
-newDevice : Identifier -> Name -> Info -> Counters -> Setting.Settings -> Device
-newDevice id name info counters settings =
-    { id = id
-    , name = name
-    , info = info
-    , counters = counters
+newName : Name
+newName =
+    ""
+
+
+newModel : Model
+newModel =
+    ""
+
+
+newVersion : Version
+newVersion =
+    ""
+
+
+newSoftVersion : SoftVersion
+newSoftVersion =
+    ""
+
+
+newDevice : DeviceType -> Device
+newDevice deviceType =
+    let
+        settings =
+            case deviceType of
+                Washbox ->
+                    Setting.newChannels 0
+
+                Exchange ->
+                    Setting.newConfig
+    in
+    { id = newIdentifier
+    , name = newName
+    , info = infoOf newModel newVersion newSoftVersion
+    , counters = Counter.newCounters []
     , settings = settings
     }
 
@@ -67,16 +97,14 @@ newDevice id name info counters settings =
 --ENCODE
 
 
-encodeDevice : Device -> E.Value
-encodeDevice device =
+encode : Device -> E.Value
+encode device =
     E.object
         [ ( "id", E.string device.id )
         , ( "name", E.string device.name )
         , ( "info", encodeInfo device.info )
-        , ( "counters"
-          , E.list Counter.encodeCounter device.counters
-          )
-        , ( "settings", Setting.encodeSettings device.settings )
+        , ( "counters", Counter.encode device.counters )
+        , ( "settings", Setting.encode device.settings )
         ]
 
 
@@ -93,32 +121,29 @@ encodeInfo ( model, version, softVersion ) =
 --DECODE
 
 
-decodeDevice : D.Decoder Device
-decodeDevice =
-    D.map5 newDevice
+decoder : D.Decoder Device
+decoder =
+    D.map5 Device
         (D.field "id" D.string)
         (D.field "name" D.string)
         (D.field "info" decodeInfo)
-        (D.field "counters" <|
-            D.list Counter.decodeCounter
-        )
-        (D.field "settings" Setting.decodeSettings)
+        (D.field "counters" Counter.decoder)
+        (D.field "settings" Setting.decoder)
 
 
-newInfo : Model -> Version -> SoftVersion -> Info
-newInfo model version softVersion =
+infoOf : Model -> Version -> SoftVersion -> Info
+infoOf model version softVersion =
     ( model, version, softVersion )
 
 
 decodeInfo : D.Decoder Info
 decodeInfo =
-    D.map3 newInfo
+    D.map3 infoOf
         (D.field "model" D.string)
         (D.field "version" D.string)
         (D.field "softVersion" D.string)
 
 
 
--- TODO encoders and decoders
--- TODO creators and setters
+-- TODO mappers
 -- TODO view

@@ -1,8 +1,7 @@
-module Device.Setting exposing (Settings(..), decodeSettings, encodeSettings)
+module Device.Setting exposing (Settings, decoder, encode, newChannels, newConfig)
 
 import Json.Decode as D
 import Json.Encode as E
-import Json.Encode.Extra as EncodeExtra
 
 
 
@@ -140,34 +139,81 @@ type Faze
 
 
 
+--CREATE
+
+
+newChannels : Actual -> Settings
+newChannels actual =
+    Channels ( actual, [] )
+
+
+newVariables : Variables
+newVariables =
+    { coinNominal = 0
+    , hopperCoinNominal = 0
+    , billNominal = []
+    , cardPrice = 0
+    , deviceId = ""
+    , serverCode = ""
+    , bonusPercent = 0
+    , bonusThreshold = 0
+    }
+
+
+newSwitches : Switches
+newSwitches =
+    { hopper = Hopper NoFaze
+    , hopperMode = HopperMode NoFaze
+    , billValidator = BillValidator NoFaze
+    , rfidReader1 = RfidReader1 NoFaze
+    , rfidReader2 = RfidReader2 NoFaze
+    , dispenser = Dispenser NoFaze
+    , cardOut = CardOut NoFaze
+    , network = Network NoFaze
+    }
+
+
+newParameters : Parameters
+newParameters =
+    { variables = newVariables
+    , switches = newSwitches
+    }
+
+
+newConfig : Settings
+newConfig =
+    configOf newParameters
+
+
+
 --DECODE
 
 
-newChannels : Actual -> Defined -> Settings
-newChannels actual defined =
+channelsOf : Actual -> Defined -> Settings
+channelsOf actual defined =
     Channels ( actual, defined )
 
 
-decodeSettings : D.Decoder Settings
-decodeSettings =
+decoder : D.Decoder Settings
+decoder =
     D.oneOf [ decodeChannels, decodeConfig ]
 
 
 decodeChannels : D.Decoder Settings
 decodeChannels =
-    D.map2 newChannels
+    D.map2 channelsOf
         (D.field "actual" D.int)
         (D.field "defined" <| D.list decodeComponent)
 
 
-newComponent : Int -> List Ingredient -> Channel
-newComponent index ingredients =
+componentOf : Int -> List Ingredient -> Channel
+componentOf index ingredients =
     ( index, ingredients )
 
 
 decodeComponent : D.Decoder Channel
 decodeComponent =
-    D.map2 newComponent
+    D.map2 componentOf
         (D.field "index" D.int)
         (D.field "ingredients" <| D.list decodeIngredient)
 
@@ -196,14 +242,14 @@ decodeResource =
         (D.field "unit" D.string)
 
 
-newConfig : Parameters -> Settings
-newConfig parameters =
+configOf : Parameters -> Settings
+configOf parameters =
     Config parameters
 
 
 decodeConfig : D.Decoder Settings
 decodeConfig =
-    D.map newConfig
+    D.map configOf
         decodeParameters
 
 
@@ -603,8 +649,8 @@ encodeChannels channels =
         ]
 
 
-encodeSettings : Settings -> E.Value
-encodeSettings settings =
+encode : Settings -> E.Value
+encode settings =
     let
         value =
             case settings of
@@ -615,3 +661,7 @@ encodeSettings settings =
                     encodeParameters parameters
     in
     value
+
+
+
+-- TODO mappers

@@ -1,7 +1,11 @@
-module Device.Counter exposing (Counter, decodeCounter, encodeCounter)
+module Device.Counter exposing (Counters, decoder, encode, newCounters)
 
 import Json.Decode as D
 import Json.Encode as E
+
+
+type alias Counters =
+    List Counter
 
 
 type alias Counter =
@@ -28,18 +32,38 @@ type alias Total =
 --CREATOR
 
 
-newPointer : Int -> Int -> Pointer
-newPointer daily total =
+createPointer : Daily -> Total -> Pointer
+createPointer daily total =
     ( daily, total )
 
 
-newCounter : String -> Pointer -> Counter
-newCounter name pointer =
+createCounter : Name -> Pointer -> Counter
+createCounter name pointer =
     ( name, pointer )
+
+
+newPointer : Pointer
+newPointer =
+    ( 0, 0 )
+
+
+newCounter : Name -> Counter
+newCounter name =
+    ( name, newPointer )
+
+
+newCounters : List Name -> Counters
+newCounters names =
+    List.map newCounter names
 
 
 
 --ENCODE
+
+
+encode : Counters -> E.Value
+encode counters =
+    E.list encodeCounter counters
 
 
 encodeCounter : Counter -> E.Value
@@ -62,15 +86,24 @@ encodePointer pointer =
 --DECODE
 
 
+decoder : D.Decoder Counters
+decoder =
+    D.list decodeCounter
+
+
 decodeCounter : D.Decoder Counter
 decodeCounter =
-    D.map2 newCounter
+    D.map2 createCounter
         (D.field "name" D.string)
         (D.field "pointer" decodePointer)
 
 
 decodePointer : D.Decoder Pointer
 decodePointer =
-    D.map2 newPointer
+    D.map2 createPointer
         (D.field "daily" D.int)
         (D.field "total" D.int)
+
+
+
+-- TODO mappers (should be used only with some setting changests)
