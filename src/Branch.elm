@@ -86,12 +86,66 @@ decodeShortcut =
 
 
 
+-- CREATE
+
+
+generateId : Identifier
+generateId =
+    -- FIXME should be sha1
+    "gag"
+
+
+createBranch : String -> ( Identifier, Branch )
+createBranch name =
+    ( generateId
+    , { name = name
+      , shortcuts = Dict.empty
+      }
+    )
+
+
+createShortcut : Device.Device -> ( Identifier, DeviceShortcut )
+createShortcut device =
+    ( device.id
+    , { name = device.name }
+    )
+
+
+
 -- MAP
--- TODO implement me
--- addBranch : String -> Branches -> Branches
--- TODO implement me
--- removeBranch : Identifier -> Branches -> Branches
--- TODO implement me
--- addDevice : Device.Device -> Branch -> Branch
--- TODO implement me
--- removeDevice : Identifier -> Branch -> Branch
+-- TODO deal with expose necessary functions
+
+
+addBranch : ( Identifier, Branch ) -> Branches -> Branches
+addBranch ( id, branch ) branches =
+    Dict.insert id branch branches
+
+
+removeBranch : Identifier -> Branches -> Branches
+removeBranch id branches =
+    Dict.remove id branches
+
+
+addDevice : Device.Device -> Branch -> Branch
+addDevice device branch =
+    let
+        shortcut =
+            createShortcut device
+    in
+    let
+        updatedShortcuts =
+            Dict.insert
+                (Tuple.first shortcut)
+                (Tuple.second shortcut)
+                branch.shortcuts
+    in
+    { branch | shortcuts = updatedShortcuts }
+
+
+removeDevice : Identifier -> Branch -> Branch
+removeDevice id branch =
+    let
+        updatedShortcuts =
+            Dict.remove id branch.shortcuts
+    in
+    { branch | shortcuts = updatedShortcuts }
