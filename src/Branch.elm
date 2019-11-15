@@ -1,17 +1,19 @@
 module Branch exposing (Branches, decoder, encode)
 
+import Device
+import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
 
 
 type alias Branches =
-    List Branch
+    Dict Identifier Branch
 
 
 type alias Branch =
     { id : Identifier
-    , name : String
-    , devices : Labels
+    , name : Name
+    , shortcuts : Dict Identifier DeviceShortcut
     }
 
 
@@ -19,20 +21,13 @@ type alias Identifier =
     String
 
 
-type alias Labels =
-    List Label
-
-
-type alias Label =
-    { deviceId : String
-    , deviceName : String
+type alias DeviceShortcut =
+    { name : Name
     }
 
 
-newIdentifier : Identifier
-newIdentifier =
-    -- FIXME should be sha1
-    "bar"
+type alias Name =
+    String
 
 
 
@@ -41,8 +36,7 @@ newIdentifier =
 
 encode : Branches -> E.Value
 encode branches =
-    E.object
-        [ ( "branches", E.list encodeBranch branches ) ]
+    E.dict encodeId encodeBranch branches
 
 
 encodeBranch : Branch -> E.Value
@@ -50,15 +44,24 @@ encodeBranch branch =
     E.object
         [ ( "id", E.string branch.id )
         , ( "name", E.string branch.name )
-        , ( "devices", E.list encodeLabel branch.devices )
+        , ( "shortuts", encodeShortcuts branch.shortcuts )
         ]
 
 
-encodeLabel : Label -> E.Value
-encodeLabel label =
+encodeShortcuts : Dict Identifier DeviceShortcut -> E.Value
+encodeShortcuts shortcuts =
+    E.dict encodeId encodeShortcut shortcuts
+
+
+encodeId : Identifier -> String
+encodeId id =
+    id
+
+
+encodeShortcut : DeviceShortcut -> E.Value
+encodeShortcut shortcut =
     E.object
-        [ ( "deviceId", E.string label.deviceId )
-        , ( "deviceName", E.string label.deviceName )
+        [ ( "name", E.string shortcut.name )
         ]
 
 
@@ -66,21 +69,28 @@ encodeLabel label =
 -- DECODER
 
 
-decoder : D.Decoder Branches
+decoder : D.Decoder Branch
 decoder =
-    D.field "branches" <| D.list decodeBranch
-
-
-decodeBranch : D.Decoder Branch
-decodeBranch =
     D.map3 Branch
         (D.field "id" D.string)
         (D.field "name" D.string)
-        (D.field "devices" <| D.list decodeLabel)
+        (D.field "shortcuts" decodeShortcuts)
 
 
-decodeLabel : D.Decoder Label
-decodeLabel =
-    D.map2 Label
-        (D.field "deviceId" D.string)
-        (D.field "deviceName" D.string)
+decodeShortcuts : D.Decoder (Dict Identifier DeviceShortcut)
+decodeShortcuts =
+    D.dict decodeShortcut
+
+
+decodeShortcut : D.Decoder DeviceShortcut
+decodeShortcut =
+    D.map DeviceShortcut
+        (D.field "name" D.string)
+
+
+
+-- MAP
+-- TODO implement me
+-- addDevice : Device.Device -> Branch -> Branch
+-- TODO implement me
+-- removeDevice : Device.Device -> Branch -> Branch
