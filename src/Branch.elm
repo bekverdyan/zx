@@ -11,8 +11,7 @@ type alias Branches =
 
 
 type alias Branch =
-    { id : Identifier
-    , name : Name
+    { name : Name
     , shortcuts : Dict Identifier DeviceShortcut
     }
 
@@ -36,25 +35,24 @@ type alias Name =
 
 encode : Branches -> E.Value
 encode branches =
-    E.dict encodeId encodeBranch branches
+    E.dict idToString encodeBranch branches
 
 
 encodeBranch : Branch -> E.Value
 encodeBranch branch =
     E.object
-        [ ( "id", E.string branch.id )
-        , ( "name", E.string branch.name )
+        [ ( "name", E.string branch.name )
         , ( "shortuts", encodeShortcuts branch.shortcuts )
         ]
 
 
 encodeShortcuts : Dict Identifier DeviceShortcut -> E.Value
 encodeShortcuts shortcuts =
-    E.dict encodeId encodeShortcut shortcuts
+    E.dict idToString encodeShortcut shortcuts
 
 
-encodeId : Identifier -> String
-encodeId id =
+idToString : Identifier -> String
+idToString id =
     id
 
 
@@ -71,8 +69,7 @@ encodeShortcut shortcut =
 
 decoder : D.Decoder Branch
 decoder =
-    D.map3 Branch
-        (D.field "id" D.string)
+    D.map2 Branch
         (D.field "name" D.string)
         (D.field "shortcuts" decodeShortcuts)
 
@@ -91,6 +88,10 @@ decodeShortcut =
 
 -- MAP
 -- TODO implement me
+-- addBranch : String -> Branches -> Branches
+-- TODO implement me
+-- removeBranch : Identifier -> Branches -> Branches
+-- TODO implement me
 -- addDevice : Device.Device -> Branch -> Branch
 -- TODO implement me
--- removeDevice : Device.Device -> Branch -> Branch
+-- removeDevice : Identifier -> Branch -> Branch
