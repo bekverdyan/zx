@@ -1,4 +1,4 @@
-module Device exposing (Device, DeviceType(..), decoder, encode, newDevice)
+module Device exposing (Device, DeviceType(..), Devices, decoder, encode, newDevice, pullDevices)
 
 import Branch.Shortcut as BranchShortcut
 import Device.Counter as Counter
@@ -6,6 +6,10 @@ import Device.Setting as Setting
 import Device.Shortcut as DeviceShortcut
 import Json.Decode as D
 import Json.Encode as E
+
+
+type alias Devices =
+    List Device
 
 
 type alias Device =
@@ -108,6 +112,26 @@ newDevice deviceType =
 
 
 
+-- FLAG
+
+
+pullDevices : D.Value -> Maybe Devices
+pullDevices value =
+    handleResult <|
+        D.decodeValue decodeDevices value
+
+
+handleResult : Result D.Error Devices -> Maybe Devices
+handleResult result =
+    case result of
+        Ok value ->
+            Just value
+
+        Err _ ->
+            Nothing
+
+
+
 --ENCODE
 
 
@@ -134,6 +158,11 @@ encodeInfo ( model, version, softVersion ) =
 
 
 --DECODE
+
+
+decodeDevices : D.Decoder Devices
+decodeDevices =
+    D.list decoder
 
 
 decoder : D.Decoder Device

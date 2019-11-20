@@ -1,10 +1,15 @@
-module Main exposing (Model, init, main)
+port module Main exposing (Model, init, main)
 
+import Branch
+import Branch.Shortcut as BranchShortcut
 import Browser
 import Debug
-import Device as Device
+import Device
+import Device.Shortcut as DeviceShortcut
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Json.Decode as D
+import Json.Encode as E
 
 
 main =
@@ -14,6 +19,22 @@ main =
         , view = view
         , subscriptions = always Sub.none
         }
+
+
+
+-- PORT
+
+
+port saveBranches : E.Value -> Cmd msg
+
+
+port saveDevices : E.Value -> Cmd msg
+
+
+port loadBranches : (E.Value -> msg) -> Sub msg
+
+
+port loadDevices : (E.Value -> msg) -> Sub msg
 
 
 
@@ -27,23 +48,29 @@ type alias Document msg =
 
 
 type alias Model =
-    { carwashes : Int
-    , device : Device.Device
+    { branches : Maybe Branch.Branches
+    , devices : Maybe Device.Devices
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+type alias Flags =
+    { branches : D.Value
+    , devices : D.Value
+    }
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( Model
-        0
+        (Branch.pullBranches flags.branches)
       <|
-        Device.newDevice Device.Washbox
+        Device.pullDevices flags.devices
     , Cmd.none
     )
 
 
 type Msg
-    = SamuilArshak
+    = NoOp
 
 
 
@@ -53,7 +80,7 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SamuilArshak ->
+        NoOp ->
             ( model, Cmd.none )
 
 

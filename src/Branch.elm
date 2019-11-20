@@ -1,4 +1,4 @@
-module Branch exposing (Branch, Branches, Identifier, decoder, encode)
+module Branch exposing (Branch, Branches, Identifier, decoder, encode, pullBranches)
 
 import Branch.Shortcut as BranchShortcut
 import Device.Shortcut as DeviceShortcut
@@ -35,6 +35,26 @@ create ( id, branch ) =
 
 
 
+-- FLAG
+
+
+pullBranches : D.Value -> Maybe Branches
+pullBranches value =
+    handleResult <|
+        D.decodeValue decoder value
+
+
+handleResult : Result D.Error Branches -> Maybe Branches
+handleResult result =
+    case result of
+        Ok branches ->
+            Just branches
+
+        Err _ ->
+            Nothing
+
+
+
 -- ENCODE
 
 
@@ -60,8 +80,13 @@ idToString id =
 -- DECODER
 
 
-decoder : D.Decoder Branch
+decoder : D.Decoder Branches
 decoder =
+    D.field "branches" <| D.dict decodeBranch
+
+
+decodeBranch : D.Decoder Branch
+decodeBranch =
     D.map2 Branch
         (D.field "name" D.string)
         DeviceShortcut.decoder
