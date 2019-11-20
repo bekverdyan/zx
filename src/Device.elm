@@ -1,7 +1,9 @@
 module Device exposing (Device, DeviceType(..), decoder, encode, newDevice)
 
+import Branch.Shortcut as BranchShortcut
 import Device.Counter as Counter
 import Device.Setting as Setting
+import Device.Shortcut as DeviceShortcut
 import Json.Decode as D
 import Json.Encode as E
 
@@ -10,6 +12,7 @@ type alias Device =
     { id : Identifier
     , name : Name
     , info : Info
+    , branch : BranchShortcut.Shortcut
     , counters : Counter.Counters
     , settings : Setting.Settings
     }
@@ -46,6 +49,13 @@ type DeviceType
 
 
 --CREATE
+
+
+createShortcut : Device -> ( Identifier, DeviceShortcut.Shortcut )
+createShortcut device =
+    ( device.id
+    , { name = device.name }
+    )
 
 
 newIdentifier : Identifier
@@ -88,6 +98,10 @@ newDevice deviceType =
     { id = newIdentifier
     , name = newName
     , info = infoOf newModel newVersion newSoftVersion
+    , branch =
+        { id = newIdentifier
+        , name = newName
+        }
     , counters = Counter.newCounters []
     , settings = settings
     }
@@ -103,6 +117,7 @@ encode device =
         [ ( "id", E.string device.id )
         , ( "name", E.string device.name )
         , ( "info", encodeInfo device.info )
+        , BranchShortcut.encode device.branch
         , ( "counters", Counter.encode device.counters )
         , ( "settings", Setting.encode device.settings )
         ]
@@ -123,10 +138,11 @@ encodeInfo ( model, version, softVersion ) =
 
 decoder : D.Decoder Device
 decoder =
-    D.map5 Device
+    D.map6 Device
         (D.field "id" D.string)
         (D.field "name" D.string)
         (D.field "info" decodeInfo)
+        BranchShortcut.decoder
         (D.field "counters" Counter.decoder)
         (D.field "settings" Setting.decoder)
 
