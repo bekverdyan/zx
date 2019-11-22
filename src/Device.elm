@@ -1,22 +1,34 @@
-module Device exposing (Device, DeviceType(..), Devices, decoder, encode, newDevice, pullDevices)
+module Device exposing (Device, DeviceType(..), Devices, Msg, createShortcut, decoder, encode, encodeDevices, newDevice, pullDevices, update)
 
 import Branch.Shortcut as BranchShortcut
+import Crypto.Hash as Hash
 import Device.Counter as Counter
 import Device.Setting as Setting
 import Device.Shortcut as DeviceShortcut
 import Json.Decode as D
 import Json.Encode as E
+import Random
+import Random.Char as RandomChar
+import Random.String as RandomString
 
 
 type alias Devices =
     List Device
 
 
+type alias BranchShortcut =
+    BranchShortcut.Shortcut
+
+
+type alias DeviceShortcut =
+    DeviceShortcut.Shortcut
+
+
 type alias Device =
     { id : Identifier
     , name : Name
     , info : Info
-    , branch : BranchShortcut.Shortcut
+    , branch : BranchShortcut
     , counters : Counter.Counters
     , settings : Setting.Settings
     }
@@ -52,20 +64,34 @@ type DeviceType
 
 
 
+-- UPDATE
+
+
+type Msg
+    = GenerateDevice String
+
+
+update : Msg -> Maybe Device -> BranchShortcut.Shortcut -> ( Device, Maybe Msg )
+update msg device branch =
+    case msg of
+        GenerateDevice salt ->
+            ( newDevice Washbox salt branch, Nothing )
+
+
+
 --CREATE
 
 
-createShortcut : Device -> ( Identifier, DeviceShortcut.Shortcut )
+createShortcut : Device -> ( Identifier, DeviceShortcut )
 createShortcut device =
     ( device.id
     , { name = device.name }
     )
 
 
-newIdentifier : Identifier
-newIdentifier =
-    -- FIXME should be sha1
-    "foo"
+newIdentifier : String -> Identifier
+newIdentifier salt =
+    Hash.sha256 salt
 
 
 newName : Name
@@ -88,8 +114,8 @@ newSoftVersion =
     ""
 
 
-newDevice : DeviceType -> Device
-newDevice deviceType =
+newDevice : DeviceType -> String -> BranchShortcut.Shortcut -> Device
+newDevice deviceType salt branch =
     let
         settings =
             case deviceType of
@@ -99,13 +125,10 @@ newDevice deviceType =
                 Exchange ->
                     Setting.newConfig
     in
-    { id = newIdentifier
+    { id = newIdentifier salt
     , name = newName
     , info = infoOf newModel newVersion newSoftVersion
-    , branch =
-        { id = newIdentifier
-        , name = newName
-        }
+    , branch = branch
     , counters = Counter.newCounters []
     , settings = settings
     }
@@ -133,6 +156,11 @@ handleResult result =
 
 
 --ENCODE
+
+
+encodeDevices : Devices -> E.Value
+encodeDevices devices =
+    E.list encode devices
 
 
 encode : Device -> E.Value

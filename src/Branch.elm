@@ -1,6 +1,7 @@
-module Branch exposing (Branch, Branches, Identifier, decoder, encode, pullBranches)
+module Branch exposing (Branch, Branches, Identifier, Msg, createShortcut, decoder, encode, newBranch, pullBranches, update)
 
 import Branch.Shortcut as BranchShortcut
+import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -25,13 +26,50 @@ type alias Name =
     String
 
 
+type alias BranchShortcut =
+    BranchShortcut.Shortcut
+
+
+
+-- UPDATE
+
+
+type Msg
+    = GenerateBranch String
+
+
+update : Msg -> Maybe Branch -> ( ( Identifier, Branch ), Maybe Msg )
+update msg branch =
+    case msg of
+        GenerateBranch salt ->
+            ( newBranch "exo" salt, Nothing )
+
+
 
 -- CREATE
 
 
-create : ( Identifier, Branch ) -> BranchShortcut.Shortcut
-create ( id, branch ) =
+createShortcut : ( Identifier, Branch ) -> BranchShortcut
+createShortcut ( id, branch ) =
     { id = id, name = branch.name }
+
+
+
+-- CREATE
+
+
+newIdentifier : String -> Identifier
+newIdentifier salt =
+    Hash.sha512 salt
+
+
+newBranch : String -> String -> ( Identifier, Branch )
+newBranch name salt =
+    ( newIdentifier salt
+    , { name = name
+      , shortcuts = Dict.empty
+      }
+    )
 
 
 
@@ -90,25 +128,6 @@ decodeBranch =
     D.map2 Branch
         (D.field "name" D.string)
         DeviceShortcut.decoder
-
-
-
--- CREATE
-
-
-generateId : Identifier
-generateId =
-    -- FIXME should be sha1
-    "gag"
-
-
-createBranch : String -> ( Identifier, Branch )
-createBranch name =
-    ( generateId
-    , { name = name
-      , shortcuts = Dict.empty
-      }
-    )
 
 
 
