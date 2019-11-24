@@ -3,8 +3,6 @@ port module Main exposing (Model, init, main)
 import Branch
 import Branch.Shortcut as BranchShortcut
 import Browser
-import Crypto.Hash as Hash
-import Debug
 import Device
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
@@ -147,11 +145,6 @@ requestBranchGeneration : Cmd Msg
 requestBranchGeneration =
     Random.generate GenerateBranch <|
         RandomString.string 6 RandomChar.armenian
-
-
-generateSha : String -> String
-generateSha salt =
-    Hash.sha512 salt
 
 
 type alias BranchID =
