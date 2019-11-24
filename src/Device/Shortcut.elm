@@ -1,4 +1,4 @@
-module Device.Shortcut exposing (Shortcut, Shortcuts, addShortcut, decoder, encode, removeShortcut)
+module Device.Shortcut exposing (Identifier, Shortcut, decoder, encode)
 
 import Dict
 import Json.Decode as D
@@ -9,12 +9,9 @@ import Json.Encode as E
 -- MODEL
 
 
-type alias Shortcuts =
-    Dict.Dict Identifier Shortcut
-
-
 type alias Shortcut =
-    { name : Name
+    { id : Identifier
+    , name : Name
     }
 
 
@@ -30,15 +27,11 @@ type alias Name =
 -- ENCODE
 
 
-encode : Shortcuts -> ( String, E.Value )
-encode shortcuts =
-    ( "shortcuts", E.dict idToString encodeShortcut shortcuts )
-
-
-encodeShortcut : Shortcut -> E.Value
-encodeShortcut shortcut =
+encode : Shortcut -> E.Value
+encode shortcut =
     E.object
-        [ ( "name", E.string shortcut.name )
+        [ ( "id", E.string shortcut.id )
+        , ( "name", E.string shortcut.name )
         ]
 
 
@@ -46,14 +39,10 @@ encodeShortcut shortcut =
 -- DECODE
 
 
-decoder : D.Decoder Shortcuts
+decoder : D.Decoder Shortcut
 decoder =
-    D.field "shortcuts" <| D.dict decodeShortcut
-
-
-decodeShortcut : D.Decoder Shortcut
-decodeShortcut =
-    D.map Shortcut
+    D.map2 Shortcut
+        (D.field "id" D.string)
         (D.field "name" D.string)
 
 
@@ -64,16 +53,3 @@ decodeShortcut =
 idToString : Identifier -> String
 idToString id =
     id
-
-
-addShortcut : ( Identifier, Shortcut ) -> Shortcuts -> Shortcuts
-addShortcut ( id, shortcut ) shortcuts =
-    Dict.insert
-        id
-        shortcut
-        shortcuts
-
-
-removeShortcut : Identifier -> Shortcuts -> Shortcuts
-removeShortcut id shortcuts =
-    Dict.remove id shortcuts

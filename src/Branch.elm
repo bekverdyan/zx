@@ -1,4 +1,4 @@
-module Branch exposing (Branch, Branches, Identifier, Msg, createShortcut, decoder, encode, newBranch, pullBranches, update)
+module Branch exposing (Branch, Identifier, Msg, createShortcut, decoder, encode, idToString, newBranch, update)
 
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -8,13 +8,10 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-type alias Branches =
-    Dict Identifier Branch
-
-
 type alias Branch =
-    { name : Name
-    , shortcuts : DeviceShortcut.Shortcuts
+    { id : Identifier
+    , name : Name
+    , shortcuts : Shortcuts
     }
 
 
@@ -30,6 +27,10 @@ type alias BranchShortcut =
     BranchShortcut.Shortcut
 
 
+type alias Shortcuts =
+    Dict.Dict DeviceShortcut.Identifier DeviceShortcut.Shortcut
+
+
 
 -- UPDATE
 
@@ -38,7 +39,7 @@ type Msg
     = GenerateBranch String
 
 
-update : Msg -> Maybe Branch -> ( ( Identifier, Branch ), Maybe Msg )
+update : Msg -> Maybe Branch -> ( Branch, Maybe Msg )
 update msg branch =
     case msg of
         GenerateBranch salt ->
@@ -49,9 +50,9 @@ update msg branch =
 -- CREATE
 
 
-createShortcut : ( Identifier, Branch ) -> BranchShortcut
-createShortcut ( id, branch ) =
-    { id = id, name = branch.name }
+createShortcut : Branch -> BranchShortcut
+createShortcut branch =
+    { id = branch.id, name = branch.name }
 
 
 
@@ -60,53 +61,33 @@ createShortcut ( id, branch ) =
 
 newIdentifier : String -> Identifier
 newIdentifier salt =
-    Hash.sha512 salt
+    Hash.sha512_224 salt
 
 
-newBranch : String -> String -> ( Identifier, Branch )
+newBranch : String -> String -> Branch
 newBranch name salt =
-    ( newIdentifier salt
-    , { name = name
-      , shortcuts = Dict.empty
-      }
-    )
-
-
-
--- FLAG
-
-
-pullBranches : D.Value -> Maybe Branches
-pullBranches value =
-    handleResult <|
-        D.decodeValue decoder value
-
-
-handleResult : Result D.Error Branches -> Maybe Branches
-handleResult result =
-    case result of
-        Ok branches ->
-            Just branches
-
-        Err _ ->
-            Nothing
+    { id = newIdentifier salt
+    , name = name
+    , shortcuts = Dict.empty
+    }
 
 
 
 -- ENCODE
 
 
-encode : Branches -> E.Value
-encode branches =
-    E.dict idToString encodeBranch branches
-
-
-encodeBranch : Branch -> E.Value
-encodeBranch branch =
+encode : Branch -> E.Value
+encode branch =
     E.object
-        [ ( "name", E.string branch.name )
-        , DeviceShortcut.encode branch.shortcuts
+        [ ( "id", E.string branch.id )
+        , ( "name", E.string branch.name )
+        , encodeShortcuts branch.shortcuts
         ]
+
+
+encodeShortcuts : Shortcuts -> ( String, E.Value )
+encodeShortcuts shortcuts =
+    ( "shortcuts", E.dict idToString DeviceShortcut.encode shortcuts )
 
 
 idToString : Identifier -> String
@@ -118,16 +99,17 @@ idToString id =
 -- DECODER
 
 
-decoder : D.Decoder Branches
+decoder : D.Decoder Branch
 decoder =
-    D.field "branches" <| D.dict decodeBranch
-
-
-decodeBranch : D.Decoder Branch
-decodeBranch =
-    D.map2 Branch
+    D.map3 Branch
+        (D.field "id" D.string)
         (D.field "name" D.string)
-        DeviceShortcut.decoder
+        decodeShortcut
+
+
+decodeShortcut : D.Decoder Shortcuts
+decodeShortcut =
+    D.field "shortcuts" <| D.dict DeviceShortcut.decoder
 
 
 
@@ -135,11 +117,14 @@ decodeBranch =
 -- TODO deal with expose necessary functions
 
 
-addBranch : ( Identifier, Branch ) -> Branches -> Branches
-addBranch ( id, branch ) branches =
-    Dict.insert id branch branches
+addShortcut : DeviceShortcut.Shortcut -> Shortcuts -> Shortcuts
+addShortcut shortcut shortcuts =
+    Dict.insert
+        shortcut.id
+        shortcut
+        shortcuts
 
 
-removeBranch : Identifier -> Branches -> Branches
-removeBranch id branches =
-    Dict.remove id branches
+removeShortcut : Identifier -> Shortcuts -> Shortcuts
+removeShortcut id shortcuts =
+    Dict.remove id shortcuts

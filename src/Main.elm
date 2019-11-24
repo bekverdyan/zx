@@ -7,7 +7,7 @@ import Crypto.Hash as Hash
 import Debug
 import Device
 import Device.Shortcut as DeviceShortcut
-import Dict
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Decode as D
@@ -49,9 +49,25 @@ type alias Document msg =
 
 
 type alias Model =
-    { branches : Maybe Branch.Branches
-    , devices : Maybe Device.Devices
+    { branches : Maybe Branches
+    , devices : Maybe Devices
     }
+
+
+type alias Branches =
+    Dict Branch.Identifier Branch
+
+
+type alias Branch =
+    Branch.Branch
+
+
+type alias Devices =
+    Dict Device.Identifier Device
+
+
+type alias Device =
+    Device.Device
 
 
 type alias Flags =
@@ -60,32 +76,61 @@ type alias Flags =
     }
 
 
+
+-- FLAG
+
+
+pullBranches : D.Value -> Maybe Branches
+pullBranches value =
+    handleBranchResult <|
+        D.decodeValue decodeBranches value
+
+
+handleBranchResult : Result D.Error Branches -> Maybe Branches
+handleBranchResult result =
+    case result of
+        Ok branches ->
+            Just branches
+
+        Err _ ->
+            Nothing
+
+
+pullDevices : D.Value -> Maybe Devices
+pullDevices value =
+    handleDeviceResult <|
+        D.decodeValue decodeDevices value
+
+
+handleDeviceResult : Result D.Error Devices -> Maybe Devices
+handleDeviceResult result =
+    case result of
+        Ok value ->
+            Just value
+
+        Err _ ->
+            Nothing
+
+
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( Model
-        (Branch.pullBranches flags.branches)
+        (pullBranches flags.branches)
       <|
-        Device.pullDevices flags.devices
+        pullDevices flags.devices
     , Cmd.none
     )
-
-
-type Msg
-    = GenerateDevice ( String, BranchShortcut )
-    | GenerateBranch String
-    | NewDevice ( BranchID, Branch.Branch )
-    | NewBranch
 
 
 
 -- UPDATE
 
 
-requestDeviceGeneration : BranchShortcut -> Cmd Msg
-requestDeviceGeneration shortcut =
+requestDeviceGeneration : Branch -> Cmd Msg
+requestDeviceGeneration branch =
     let
         constant =
-            Random.constant shortcut
+            Random.constant branch
     in
     let
         salt =
@@ -121,46 +166,70 @@ type alias DeviceShortcut =
     DeviceShortcut.Shortcut
 
 
+type Msg
+    = GenerateDevice ( String, Branch.Branch )
+    | GenerateBranch String
+    | NewDevice Branch.Branch
+    | NewBranch
+    | PushDeviceToBranch
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NewDevice branch ->
-            let
-                shortcut =
-                    Branch.createShortcut branch
-            in
-            ( model, requestDeviceGeneration shortcut )
+            ( model, requestDeviceGeneration branch )
 
         NewBranch ->
             ( model, requestBranchGeneration )
 
-        GenerateDevice ( salt, branchShortcut ) ->
+        GenerateDevice ( salt, branch ) ->
             let
+                branchShortcut =
+                    Branch.createShortcut branch
+
                 device =
-                    Device.newDevice Device.Exchange salt branchShortcut
-            in
-            let
-                devices =
-                    case model.devices of
+                    Device.newDevice
+                        Device.Exchange
+                        salt
+                        branchShortcut
+
+                deviceShortcut =
+                    Device.createShortcut device
+
+                updatedShortcuts =
+                    Dict.insert
+                        deviceShortcut.id
+                        deviceShortcut
+                        branch.shortcuts
+
+                updatedBranch =
+                    { branch | shortcuts = updatedShortcuts }
+
+                updatedBranches =
+                    case model.branches of
                         Just value ->
-                            device :: value
+                            Dict.insert branch.id branch value
 
                         Nothing ->
-                            List.singleton device
+                            Dict.singleton branch.id branch
+
+                updatedDevices =
+                    case model.devices of
+                        Just value ->
+                            Dict.insert device.id device value
+
+                        Nothing ->
+                            Dict.singleton device.id device
             in
-            ( { model | devices = Just devices }
-            , let
-                shortcut =
-                    Device.createShortcut device
-              in
-              -- TODO update and save branch shortcuts
-              -- let
-              --     branch =
-              -- let
-              --   shortcuts =
-              --       shortcut :: branch.shortcuts
-              -- in
-              saveDevices <| Device.encodeDevices devices
+            ( { model
+                | devices = Just updatedDevices
+                , branches = Just updatedBranches
+              }
+            , Cmd.batch
+                [ saveDevices <|
+                    encodeDevices updatedDevices
+                ]
             )
 
         GenerateBranch salt ->
@@ -173,18 +242,63 @@ update msg model =
                     case model.branches of
                         Just value ->
                             Dict.insert
-                                (Tuple.first branch)
-                                (Tuple.second branch)
+                                branch.id
+                                branch
                                 value
 
                         Nothing ->
                             Dict.singleton
-                                (Tuple.first branch)
-                                (Tuple.second branch)
+                                branch.id
+                                branch
             in
             ( { model | branches = Just branches }
-            , saveBranches <| Branch.encode branches
+            , saveBranches <| encodeBranches branches
             )
+
+        PushDeviceToBranch ->
+            ( model, Cmd.none )
+
+
+
+-- ENCODE
+
+
+encodeBranches : Branches -> E.Value
+encodeBranches branches =
+    E.dict Branch.idToString Branch.encode branches
+
+
+encodeDevices : Devices -> E.Value
+encodeDevices devices =
+    E.dict Device.idToString Device.encode devices
+
+
+
+-- DECODER
+
+
+decodeBranches : D.Decoder Branches
+decodeBranches =
+    D.field "branches" <| D.dict Branch.decoder
+
+
+decodeDevices : D.Decoder Devices
+decodeDevices =
+    D.field "devices" <| D.dict Device.decoder
+
+
+
+-- MAP
+
+
+addBranch : Branch -> Branches -> Branches
+addBranch branch branches =
+    Dict.insert branch.id branch branches
+
+
+removeBranch : Branch.Identifier -> Branches -> Branches
+removeBranch id branches =
+    Dict.remove id branches
 
 
 

@@ -1,4 +1,4 @@
-module Device exposing (Device, DeviceType(..), Devices, Msg, createShortcut, decoder, encode, encodeDevices, newDevice, pullDevices, update)
+module Device exposing (Device, DeviceType(..), Devices, Identifier, Msg, createShortcut, decoder, encode, idToString, newDevice, update)
 
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -79,19 +79,28 @@ update msg device branch =
 
 
 
+-- MAP
+
+
+idToString : Identifier -> String
+idToString id =
+    id
+
+
+
 --CREATE
 
 
-createShortcut : Device -> ( Identifier, DeviceShortcut )
+createShortcut : Device -> DeviceShortcut
 createShortcut device =
-    ( device.id
-    , { name = device.name }
-    )
+    { id = device.id
+    , name = device.name
+    }
 
 
 newIdentifier : String -> Identifier
 newIdentifier salt =
-    Hash.sha256 salt
+    Hash.sha512_224 salt
 
 
 newName : Name
@@ -135,32 +144,7 @@ newDevice deviceType salt branch =
 
 
 
--- FLAG
-
-
-pullDevices : D.Value -> Maybe Devices
-pullDevices value =
-    handleResult <|
-        D.decodeValue decodeDevices value
-
-
-handleResult : Result D.Error Devices -> Maybe Devices
-handleResult result =
-    case result of
-        Ok value ->
-            Just value
-
-        Err _ ->
-            Nothing
-
-
-
 --ENCODE
-
-
-encodeDevices : Devices -> E.Value
-encodeDevices devices =
-    E.list encode devices
 
 
 encode : Device -> E.Value
@@ -186,11 +170,6 @@ encodeInfo ( model, version, softVersion ) =
 
 
 --DECODE
-
-
-decodeDevices : D.Decoder Devices
-decodeDevices =
-    D.list decoder
 
 
 decoder : D.Decoder Device
