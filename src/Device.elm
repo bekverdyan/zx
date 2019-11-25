@@ -1,4 +1,4 @@
-module Device exposing (Device, DeviceType(..), Devices, Identifier, Msg, createShortcut, decoder, encode, idToString, newDevice, update)
+module Device exposing (Device, DeviceType(..), Devices, Identifier, createShortcut, decoder, encode, idToString, newDevice)
 
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -7,9 +7,6 @@ import Device.Setting as Setting
 import Device.Shortcut as DeviceShortcut
 import Json.Decode as D
 import Json.Encode as E
-import Random
-import Random.Char as RandomChar
-import Random.String as RandomString
 
 
 type alias Devices =
@@ -61,21 +58,6 @@ type alias SoftVersion =
 type DeviceType
     = Washbox
     | Exchange
-
-
-
--- UPDATE
-
-
-type Msg
-    = GenerateDevice String
-
-
-update : Msg -> Maybe Device -> BranchShortcut.Shortcut -> ( Device, Maybe Msg )
-update msg device branch =
-    case msg of
-        GenerateDevice salt ->
-            ( newDevice Washbox salt branch, Nothing )
 
 
 

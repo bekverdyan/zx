@@ -1,4 +1,4 @@
-module Branch exposing (Branch, Identifier, Msg, createShortcut, decoder, encode, idToString, newBranch, update)
+module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch)
 
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -29,21 +29,6 @@ type alias BranchShortcut =
 
 type alias Shortcuts =
     Dict.Dict DeviceShortcut.Identifier DeviceShortcut.Shortcut
-
-
-
--- UPDATE
-
-
-type Msg
-    = GenerateBranch String
-
-
-update : Msg -> Maybe Branch -> ( Branch, Maybe Msg )
-update msg branch =
-    case msg of
-        GenerateBranch salt ->
-            ( newBranch "exo" salt, Nothing )
 
 
 
