@@ -1,9 +1,12 @@
-module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch)
+module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view)
 
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -66,13 +69,13 @@ encode branch =
     E.object
         [ ( "id", E.string branch.id )
         , ( "name", E.string branch.name )
-        , encodeShortcuts branch.shortcuts
+        , ( "shortcuts", encodeShortcuts branch.shortcuts )
         ]
 
 
-encodeShortcuts : Shortcuts -> ( String, E.Value )
+encodeShortcuts : Shortcuts -> E.Value
 encodeShortcuts shortcuts =
-    ( "shortcuts", E.dict idToString DeviceShortcut.encode shortcuts )
+    E.dict idToString DeviceShortcut.encode shortcuts
 
 
 idToString : Identifier -> String
@@ -89,12 +92,12 @@ decoder =
     D.map3 Branch
         (D.field "id" D.string)
         (D.field "name" D.string)
-        decodeShortcut
+        (D.field "shortcuts" decodeShortcuts)
 
 
-decodeShortcut : D.Decoder Shortcuts
-decodeShortcut =
-    D.field "shortcuts" <| D.dict DeviceShortcut.decoder
+decodeShortcuts : D.Decoder Shortcuts
+decodeShortcuts =
+    D.dict DeviceShortcut.decoder
 
 
 
@@ -113,3 +116,33 @@ addShortcut shortcut shortcuts =
 removeShortcut : Identifier -> Shortcuts -> Shortcuts
 removeShortcut id shortcuts =
     Dict.remove id shortcuts
+
+
+
+-- VIEW
+
+
+view : Branch -> Html msg
+view branch =
+    li []
+        [ span [ class "caret" ] [ text branch.name ]
+        , viewBranchShortcuts branch.shortcuts
+        ]
+
+
+viewBranchShortcuts : Shortcuts -> Html msg
+viewBranchShortcuts shortcuts =
+    let
+        shortcutsList =
+            Dict.values shortcuts
+    in
+    ul [ class "nested" ]
+        (List.map
+            viewBranchShortcut
+            shortcutsList
+        )
+
+
+viewBranchShortcut : DeviceShortcut.Shortcut -> Html msg
+viewBranchShortcut shortcut =
+    li [] [ span [] [ text shortcut.name ] ]
