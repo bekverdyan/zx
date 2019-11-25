@@ -20,7 +20,7 @@ main =
         { init = init
         , update = update
         , view = view
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
 
 
@@ -34,9 +34,13 @@ port saveBranches : E.Value -> Cmd msg
 port saveDevices : E.Value -> Cmd msg
 
 
+port loadBranches : (E.Value -> msg) -> Sub msg
 
--- port loadBranches : (E.Value -> msg) -> Sub msg
--- port loadDevices : (E.Value -> msg) -> Sub msg
+
+port loadDevices : (E.Value -> msg) -> Sub msg
+
+
+
 -- MODEL
 
 
@@ -80,6 +84,18 @@ type alias Flags =
     { branches : D.Value
     , devices : D.Value
     }
+
+
+
+-- SUBSCRIBE
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ loadDevices PullDevices
+        , loadBranches PullBranches
+        ]
 
 
 
@@ -160,6 +176,8 @@ type Msg
     | GenerateBranch String
     | NewDevice Branch
     | NewBranch
+    | PullDevices E.Value
+    | PullBranches E.Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -197,6 +215,24 @@ update msg model =
                 | branches = Just updatedBranches
               }
             , saveBranches <| encodeBranches updatedBranches
+            )
+
+        PullDevices devices ->
+            ( { model
+                | devices =
+                    handleDeviceResult <|
+                        D.decodeValue decodeDevices devices
+              }
+            , Cmd.none
+            )
+
+        PullBranches branches ->
+            ( { model
+                | branches =
+                    handleBranchResult <|
+                        D.decodeValue decodeBranches branches
+              }
+            , Cmd.none
             )
 
 
