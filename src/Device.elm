@@ -1,6 +1,7 @@
-module Device exposing (Device, DeviceType(..), decoder, encode, newDevice)
+module Device exposing (Device, DeviceType(..), Devices, Identifier, createShortcut, decoder, encode, idToString, newDevice)
 
 import Branch.Shortcut as BranchShortcut
+import Crypto.Hash as Hash
 import Device.Counter as Counter
 import Device.Setting as Setting
 import Device.Shortcut as DeviceShortcut
@@ -8,11 +9,23 @@ import Json.Decode as D
 import Json.Encode as E
 
 
+type alias Devices =
+    List Device
+
+
+type alias BranchShortcut =
+    BranchShortcut.Shortcut
+
+
+type alias DeviceShortcut =
+    DeviceShortcut.Shortcut
+
+
 type alias Device =
     { id : Identifier
     , name : Name
     , info : Info
-    , branch : BranchShortcut.Shortcut
+    , branch : BranchShortcut
     , counters : Counter.Counters
     , settings : Setting.Settings
     }
@@ -48,20 +61,28 @@ type DeviceType
 
 
 
+-- MAP
+
+
+idToString : Identifier -> String
+idToString id =
+    id
+
+
+
 --CREATE
 
 
-createShortcut : Device -> ( Identifier, DeviceShortcut.Shortcut )
+createShortcut : Device -> DeviceShortcut
 createShortcut device =
-    ( device.id
-    , { name = device.name }
-    )
+    { id = device.id
+    , name = device.name
+    }
 
 
-newIdentifier : Identifier
-newIdentifier =
-    -- FIXME should be sha1
-    "foo"
+newIdentifier : String -> Identifier
+newIdentifier salt =
+    Hash.sha512_224 salt
 
 
 newName : Name
@@ -84,8 +105,8 @@ newSoftVersion =
     ""
 
 
-newDevice : DeviceType -> Device
-newDevice deviceType =
+newDevice : DeviceType -> String -> BranchShortcut.Shortcut -> Device
+newDevice deviceType salt branch =
     let
         settings =
             case deviceType of
@@ -95,13 +116,10 @@ newDevice deviceType =
                 Exchange ->
                     Setting.newConfig
     in
-    { id = newIdentifier
+    { id = newIdentifier salt
     , name = newName
     , info = infoOf newModel newVersion newSoftVersion
-    , branch =
-        { id = newIdentifier
-        , name = newName
-        }
+    , branch = branch
     , counters = Counter.newCounters []
     , settings = settings
     }

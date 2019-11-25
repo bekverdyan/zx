@@ -1,10 +1,18 @@
-module Main exposing (Model, init, main)
+port module Main exposing (Model, init, main)
 
+import Branch
+import Branch.Shortcut as BranchShortcut
 import Browser
-import Debug
-import Device as Device
+import Device
+import Device.Shortcut as DeviceShortcut
+import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Json.Decode as D
+import Json.Encode as E
+import Random
+import Random.Char as RandomChar
+import Random.String as RandomString
 
 
 main =
@@ -17,6 +25,18 @@ main =
 
 
 
+-- PORT
+
+
+port saveBranches : E.Value -> Cmd msg
+
+
+port saveDevices : E.Value -> Cmd msg
+
+
+
+-- port loadBranches : (E.Value -> msg) -> Sub msg
+-- port loadDevices : (E.Value -> msg) -> Sub msg
 -- MODEL
 
 
@@ -27,34 +47,265 @@ type alias Document msg =
 
 
 type alias Model =
-    { carwashes : Int
-    , device : Device.Device
+    { branches : Maybe Branches
+    , devices : Maybe Devices
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+type alias Branches =
+    Dict Branch.Identifier Branch
+
+
+type alias Branch =
+    Branch.Branch
+
+
+type alias Devices =
+    Dict Device.Identifier Device
+
+
+type alias Device =
+    Device.Device
+
+
+type alias BranchShortcut =
+    BranchShortcut.Shortcut
+
+
+type alias DeviceShortcut =
+    DeviceShortcut.Shortcut
+
+
+type alias Flags =
+    { branches : D.Value
+    , devices : D.Value
+    }
+
+
+
+-- FLAG
+
+
+pullBranches : D.Value -> Maybe Branches
+pullBranches value =
+    handleBranchResult <|
+        D.decodeValue decodeBranches value
+
+
+handleBranchResult : Result D.Error Branches -> Maybe Branches
+handleBranchResult result =
+    case result of
+        Ok branches ->
+            Just branches
+
+        Err _ ->
+            Nothing
+
+
+pullDevices : D.Value -> Maybe Devices
+pullDevices value =
+    handleDeviceResult <|
+        D.decodeValue decodeDevices value
+
+
+handleDeviceResult : Result D.Error Devices -> Maybe Devices
+handleDeviceResult result =
+    case result of
+        Ok value ->
+            Just value
+
+        Err _ ->
+            Nothing
+
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
     ( Model
-        0
+        (pullBranches flags.branches)
       <|
-        Device.newDevice Device.Washbox
+        pullDevices flags.devices
     , Cmd.none
     )
-
-
-type Msg
-    = SamuilArshak
 
 
 
 -- UPDATE
 
 
+requestDeviceGeneration : Branch -> Cmd Msg
+requestDeviceGeneration branch =
+    let
+        constant =
+            Random.constant branch
+    in
+    let
+        salt =
+            RandomString.string 6 RandomChar.armenian
+    in
+    let
+        random =
+            Random.pair salt constant
+    in
+    Random.generate GenerateDevice <| random
+
+
+requestBranchGeneration : Cmd Msg
+requestBranchGeneration =
+    Random.generate GenerateBranch <|
+        RandomString.string 6 RandomChar.armenian
+
+
+type Msg
+    = GenerateDevice ( String, Branch )
+    | GenerateBranch String
+    | NewDevice Branch
+    | NewBranch
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SamuilArshak ->
-            ( model, Cmd.none )
+        NewDevice branch ->
+            ( model, requestDeviceGeneration branch )
+
+        NewBranch ->
+            ( model, requestBranchGeneration )
+
+        GenerateDevice ( salt, branch ) ->
+            let
+                ( devices, branches ) =
+                    handleDeviceGeneration salt branch model
+            in
+            ( { model
+                | devices = Just devices
+                , branches = Just branches
+              }
+            , Cmd.batch
+                [ saveDevices <|
+                    encodeDevices devices
+                , saveBranches <|
+                    encodeBranches branches
+                ]
+            )
+
+        GenerateBranch salt ->
+            let
+                updatedBranches =
+                    handleBranchGeneration salt model.branches
+            in
+            ( { model
+                | branches = Just updatedBranches
+              }
+            , saveBranches <| encodeBranches updatedBranches
+            )
+
+
+
+-- HANDLER
+
+
+handleDeviceGeneration : String -> Branch -> Model -> ( Devices, Branches )
+handleDeviceGeneration salt branch model =
+    let
+        branchShortcut =
+            Branch.createShortcut branch
+
+        device =
+            Device.newDevice
+                Device.Exchange
+                salt
+                branchShortcut
+
+        deviceShortcut =
+            Device.createShortcut device
+
+        updatedShortcuts =
+            Dict.insert
+                deviceShortcut.id
+                deviceShortcut
+                branch.shortcuts
+
+        updatedBranch =
+            { branch | shortcuts = updatedShortcuts }
+
+        updatedBranches =
+            case model.branches of
+                Just value ->
+                    Dict.insert branch.id branch value
+
+                Nothing ->
+                    Dict.singleton branch.id branch
+
+        updatedDevices =
+            case model.devices of
+                Just value ->
+                    Dict.insert device.id device value
+
+                Nothing ->
+                    Dict.singleton device.id device
+    in
+    ( updatedDevices, updatedBranches )
+
+
+handleBranchGeneration : String -> Maybe Branches -> Branches
+handleBranchGeneration salt branches =
+    let
+        branch =
+            Branch.newBranch "եղո" salt
+    in
+    case branches of
+        Just value ->
+            Dict.insert
+                branch.id
+                branch
+                value
+
+        Nothing ->
+            Dict.singleton
+                branch.id
+                branch
+
+
+
+-- ENCODE
+
+
+encodeBranches : Branches -> E.Value
+encodeBranches branches =
+    E.dict Branch.idToString Branch.encode branches
+
+
+encodeDevices : Devices -> E.Value
+encodeDevices devices =
+    E.dict Device.idToString Device.encode devices
+
+
+
+-- DECODER
+
+
+decodeBranches : D.Decoder Branches
+decodeBranches =
+    D.field "branches" <| D.dict Branch.decoder
+
+
+decodeDevices : D.Decoder Devices
+decodeDevices =
+    D.field "devices" <| D.dict Device.decoder
+
+
+
+-- MAP
+
+
+addBranch : Branch -> Branches -> Branches
+addBranch branch branches =
+    Dict.insert branch.id branch branches
+
+
+removeBranch : Branch.Identifier -> Branches -> Branches
+removeBranch id branches =
+    Dict.remove id branches
 
 
 

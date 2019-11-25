@@ -1,19 +1,17 @@
-module Branch exposing (Branch, Branches, Identifier, decoder, encode)
+module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch)
 
 import Branch.Shortcut as BranchShortcut
+import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
 
 
-type alias Branches =
-    Dict Identifier Branch
-
-
 type alias Branch =
-    { name : Name
-    , shortcuts : DeviceShortcut.Shortcuts
+    { id : Identifier
+    , name : Name
+    , shortcuts : Shortcuts
     }
 
 
@@ -25,30 +23,56 @@ type alias Name =
     String
 
 
+type alias BranchShortcut =
+    BranchShortcut.Shortcut
+
+
+type alias Shortcuts =
+    Dict.Dict DeviceShortcut.Identifier DeviceShortcut.Shortcut
+
+
 
 -- CREATE
 
 
-create : ( Identifier, Branch ) -> BranchShortcut.Shortcut
-create ( id, branch ) =
-    { id = id, name = branch.name }
+createShortcut : Branch -> BranchShortcut
+createShortcut branch =
+    { id = branch.id, name = branch.name }
+
+
+
+-- CREATE
+
+
+newIdentifier : String -> Identifier
+newIdentifier salt =
+    Hash.sha512_224 salt
+
+
+newBranch : String -> String -> Branch
+newBranch name salt =
+    { id = newIdentifier salt
+    , name = name
+    , shortcuts = Dict.empty
+    }
 
 
 
 -- ENCODE
 
 
-encode : Branches -> E.Value
-encode branches =
-    E.dict idToString encodeBranch branches
-
-
-encodeBranch : Branch -> E.Value
-encodeBranch branch =
+encode : Branch -> E.Value
+encode branch =
     E.object
-        [ ( "name", E.string branch.name )
-        , DeviceShortcut.encode branch.shortcuts
+        [ ( "id", E.string branch.id )
+        , ( "name", E.string branch.name )
+        , encodeShortcuts branch.shortcuts
         ]
+
+
+encodeShortcuts : Shortcuts -> ( String, E.Value )
+encodeShortcuts shortcuts =
+    ( "shortcuts", E.dict idToString DeviceShortcut.encode shortcuts )
 
 
 idToString : Identifier -> String
@@ -62,28 +86,15 @@ idToString id =
 
 decoder : D.Decoder Branch
 decoder =
-    D.map2 Branch
+    D.map3 Branch
+        (D.field "id" D.string)
         (D.field "name" D.string)
-        DeviceShortcut.decoder
+        decodeShortcut
 
 
-
--- CREATE
-
-
-generateId : Identifier
-generateId =
-    -- FIXME should be sha1
-    "gag"
-
-
-createBranch : String -> ( Identifier, Branch )
-createBranch name =
-    ( generateId
-    , { name = name
-      , shortcuts = Dict.empty
-      }
-    )
+decodeShortcut : D.Decoder Shortcuts
+decodeShortcut =
+    D.field "shortcuts" <| D.dict DeviceShortcut.decoder
 
 
 
@@ -91,11 +102,14 @@ createBranch name =
 -- TODO deal with expose necessary functions
 
 
-addBranch : ( Identifier, Branch ) -> Branches -> Branches
-addBranch ( id, branch ) branches =
-    Dict.insert id branch branches
+addShortcut : DeviceShortcut.Shortcut -> Shortcuts -> Shortcuts
+addShortcut shortcut shortcuts =
+    Dict.insert
+        shortcut.id
+        shortcut
+        shortcuts
 
 
-removeBranch : Identifier -> Branches -> Branches
-removeBranch id branches =
-    Dict.remove id branches
+removeShortcut : Identifier -> Shortcuts -> Shortcuts
+removeShortcut id shortcuts =
+    Dict.remove id shortcuts
