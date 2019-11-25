@@ -8,6 +8,7 @@ import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 import Random
@@ -322,12 +323,12 @@ encodeDevices devices =
 
 decodeBranches : D.Decoder Branches
 decodeBranches =
-    D.field "branches" <| D.dict Branch.decoder
+    D.dict Branch.decoder
 
 
 decodeDevices : D.Decoder Devices
 decodeDevices =
-    D.field "devices" <| D.dict Device.decoder
+    D.dict Device.decoder
 
 
 
@@ -351,5 +352,28 @@ removeBranch id branches =
 view : Model -> Document Msg
 view model =
     { title = "Դատարկ մարդ"
-    , body = [ text "դիվայս" ]
+    , body = [ viewDashboard model.branches ]
     }
+
+
+viewDashboard : Maybe Branches -> Html Msg
+viewDashboard branches =
+    div []
+        [ viewBranches branches
+        , button [ onClick NewBranch ] [ text "Create Branch" ]
+        ]
+
+
+viewBranches : Maybe Branches -> Html Msg
+viewBranches branches =
+    case branches of
+        Just value ->
+            let
+                branchesList =
+                    Dict.values value
+            in
+            ul [ id "myUL" ] <|
+                List.map Branch.view branchesList
+
+        Nothing ->
+            text "Ops !!! You have no branches yet"
