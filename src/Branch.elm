@@ -132,17 +132,5 @@ view branch =
 
 viewBranchShortcuts : Shortcuts -> Html msg
 viewBranchShortcuts shortcuts =
-    let
-        shortcutsList =
-            Dict.values shortcuts
-    in
     ul [ class "nested" ]
-        (List.map
-            viewBranchShortcut
-            shortcutsList
-        )
-
-
-viewBranchShortcut : DeviceShortcut.Shortcut -> Html msg
-viewBranchShortcut shortcut =
-    li [] [ span [] [ text shortcut.name ] ]
+        (List.map BranchShortcut.view <| Dict.values shortcuts)

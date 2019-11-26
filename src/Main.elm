@@ -376,4 +376,4 @@ viewBranches branches =
                 List.map Branch.view branchesList
 
         Nothing ->
-            text "Ops !!! You have no branches yet"
+            text "Oops !!! You have no branches yet"
