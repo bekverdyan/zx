@@ -52,9 +52,15 @@ type alias Document msg =
 
 
 type alias Model =
-    { branches : Maybe Branches
+    { dashboard : DashboardContent
     , devices : Maybe Devices
     }
+
+
+type DashboardContent
+    = Loaded Branches
+    | Loading
+    | Error
 
 
 type alias Branches =
@@ -103,20 +109,20 @@ subscriptions model =
 -- FLAG
 
 
-pullBranches : D.Value -> Maybe Branches
+pullBranches : D.Value -> DashboardContent
 pullBranches value =
     handleBranchResult <|
         D.decodeValue decodeBranches value
 
 
-handleBranchResult : Result D.Error Branches -> Maybe Branches
+handleBranchResult : Result D.Error Branches -> DashboardContent
 handleBranchResult result =
     case result of
         Ok branches ->
-            Just branches
+            Loaded branches
 
         Err _ ->
-            Nothing
+            Error
 
 
 pullDevices : D.Value -> Maybe Devices
@@ -192,30 +198,29 @@ update msg model =
 
         GenerateDevice ( salt, branch ) ->
             let
-                ( devices, branches ) =
+                ( devices, dashboard ) =
                     handleDeviceGeneration salt branch model
             in
             ( { model
                 | devices = Just devices
-                , branches = Just branches
+                , dashboard = dashboard
               }
             , Cmd.batch
                 [ saveDevices <|
                     encodeDevices devices
-                , saveBranches <|
-                    encodeBranches branches
+                , pushBranches dashboard
                 ]
             )
 
         GenerateBranch salt ->
             let
                 updatedBranches =
-                    handleBranchGeneration salt model.branches
+                    handleBranchGeneration salt model.dashboard
             in
             ( { model
-                | branches = Just updatedBranches
+                | dashboard = updatedBranches
               }
-            , saveBranches <| encodeBranches updatedBranches
+            , pushBranches updatedBranches
             )
 
         PullDevices devices ->
@@ -229,19 +234,22 @@ update msg model =
 
         PullBranches branches ->
             ( { model
-                | branches =
+                | dashboard =
                     handleBranchResult <|
                         D.decodeValue decodeBranches branches
               }
             , Cmd.none
             )
 
+        OpenDevice ->
+            ( model, Cmd.none )
+
 
 
 -- HANDLER
 
 
-handleDeviceGeneration : String -> Branch -> Model -> ( Devices, Branches )
+handleDeviceGeneration : String -> Branch -> Model -> ( Devices, DashboardContent )
 handleDeviceGeneration salt branch model =
     let
         branchShortcut =
@@ -266,12 +274,19 @@ handleDeviceGeneration salt branch model =
             { branch | shortcuts = updatedShortcuts }
 
         updatedBranches =
-            case model.branches of
-                Just value ->
-                    Dict.insert branch.id branch value
+            case model.dashboard of
+                Loaded branches ->
+                    Loaded <|
+                        Dict.insert
+                            updatedBranch.id
+                            updatedBranch
+                            branches
 
-                Nothing ->
-                    Dict.singleton branch.id branch
+                _ ->
+                    Loaded <|
+                        Dict.singleton
+                            updatedBranch.id
+                            updatedBranch
 
         updatedDevices =
             case model.devices of
@@ -284,23 +299,25 @@ handleDeviceGeneration salt branch model =
     ( updatedDevices, updatedBranches )
 
 
-handleBranchGeneration : String -> Maybe Branches -> Branches
+handleBranchGeneration : String -> DashboardContent -> DashboardContent
 handleBranchGeneration salt branches =
     let
         branch =
             Branch.newBranch "եղո" salt
     in
     case branches of
-        Just value ->
-            Dict.insert
-                branch.id
-                branch
-                value
+        Loaded value ->
+            Loaded <|
+                Dict.insert
+                    branch.id
+                    branch
+                    value
 
-        Nothing ->
-            Dict.singleton
-                branch.id
-                branch
+        _ ->
+            Loaded <|
+                Dict.singleton
+                    branch.id
+                    branch
 
 
 
