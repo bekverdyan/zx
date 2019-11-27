@@ -1,6 +1,12 @@
-module Device.Shortcut exposing (Identifier, Shortcut, decoder, encode)
+module Device.Shortcut exposing (Identifier, Shortcut, decoder, encode, view)
 
+import Bootstrap.Button as Button
+import Bootstrap.ListGroup as ListGroup
+import Bootstrap.Utilities.Spacing as Spacing
 import Dict
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -53,3 +59,16 @@ decoder =
 idToString : Identifier -> String
 idToString id =
     id
+
+
+
+-- VIEW
+
+
+view : msg -> Shortcut -> ListGroup.CustomItem msg
+view openDeviceCmd shortcut =
+    ListGroup.button
+        [ ListGroup.attrs [ onClick openDeviceCmd ]
+        , ListGroup.dark
+        ]
+        [ text <| shortcut.name ++ "Դիվայս" ]

@@ -1,8 +1,5 @@
-module Branch.Shortcut exposing (Shortcut, decoder, encode, view)
+module Branch.Shortcut exposing (Shortcut, decoder, encode)
 
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -54,12 +51,3 @@ decodeShortcut =
     D.map2 Shortcut
         (D.field "id" D.string)
         (D.field "name" D.string)
-
-
-
--- VIEW
-
-
-view : Shortcut -> Html msg
-view shortcut =
-    li [] [ span [] [ text shortcut.name ] ]
