@@ -1,8 +1,12 @@
 port module Main exposing (Model, init, main)
 
+import Bootstrap.Button as Button
+import Bootstrap.ListGroup as ListGroup
+import Bootstrap.Utilities.Spacing as Spacing
 import Branch
 import Branch.Shortcut as BranchShortcut
 import Browser
+import Debug
 import Device
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
@@ -185,6 +189,17 @@ type Msg
     | NewBranch
     | PullDevices E.Value
     | PullBranches E.Value
+    | OpenDevice
+
+
+pushBranches : DashboardContent -> Cmd Msg
+pushBranches dashboard =
+    case dashboard of
+        Loaded branches ->
+            saveBranches <| encodeBranches branches
+
+        _ ->
+            Cmd.none
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -369,28 +384,34 @@ removeBranch id branches =
 view : Model -> Document Msg
 view model =
     { title = "Դատարկ մարդ"
-    , body = [ viewDashboard model.branches ]
+    , body = [ viewDashboard model.dashboard ]
     }
 
 
-viewDashboard : Maybe Branches -> Html Msg
-viewDashboard branches =
+viewDashboard : DashboardContent -> Html Msg
+viewDashboard dashboard =
     div []
-        [ viewBranches branches
-        , button [ onClick NewBranch ] [ text "Create Branch" ]
+        [ viewBranches dashboard
+        , Button.button
+            [ Button.dark
+            , Button.attrs
+                [ Spacing.ml1, onClick NewBranch ]
+            ]
+            [ text "Create Branch" ]
         ]
 
 
-viewBranches : Maybe Branches -> Html Msg
-viewBranches branches =
-    case branches of
-        Just value ->
-            let
-                branchesList =
-                    Dict.values value
-            in
-            ul [ id "myUL" ] <|
-                List.map Branch.view branchesList
+viewBranchWithCommand : Branch -> ListGroup.Item Msg
+viewBranchWithCommand branch =
+    Branch.view (NewDevice branch) OpenDevice branch
 
-        Nothing ->
+
+viewBranches : DashboardContent -> Html Msg
+viewBranches dashboard =
+    case dashboard of
+        Loaded branches ->
+            ListGroup.ul <|
+                List.map viewBranchWithCommand (Dict.values branches)
+
+        _ ->
             text "Oops !!! You have no branches yet"
