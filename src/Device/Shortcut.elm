@@ -69,6 +69,6 @@ view : msg -> Shortcut -> ListGroup.CustomItem msg
 view openDeviceCmd shortcut =
     ListGroup.button
         [ ListGroup.attrs [ onClick openDeviceCmd ]
-        , ListGroup.dark
+        , ListGroup.info
         ]
         [ text <| shortcut.name ++ "Դիվայս" ]
