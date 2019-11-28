@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css'>
+
+  <!-- Using 'https://codepen.io/bekverdyan/pen/RwwXJVy' Tree View Pure CSS -->
   <link rel="stylesheet" href="tree-view.css">
   <script src="zx.js"></script>
 </head>
@@ -38,18 +41,6 @@
     app.ports.loadBranches.send(parsedBranches);
 
     app.ports.loadDevices.send(parsedDevices);
-
-    var toggler = document.getElementsByClassName("caret");
-    var i;
-
-    for (i = 0; i < toggler.length; i++) {
-      toggler[i].addEventListener("click", function() {
-        this.parentElement
-          .querySelector(".nested").classList.toggle("active");
-        this.classList.toggle("caret-down");
-      });
-    }
-
   </script>
 </body>
 </html>
