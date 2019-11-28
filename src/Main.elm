@@ -1,7 +1,8 @@
 port module Main exposing (Model, init, main)
 
+-- import Bootstrap.ListGroup as ListGroup
+
 import Bootstrap.Button as Button
-import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch
 import Branch.Shortcut as BranchShortcut
@@ -189,7 +190,8 @@ type Msg
     | NewBranch
     | PullDevices E.Value
     | PullBranches E.Value
-    | OpenDevice
+    | OpenDevice DeviceShortcut.Identifier
+    | OpenBranch Branch.Identifier
 
 
 pushBranches : DashboardContent -> Cmd Msg
@@ -256,7 +258,18 @@ update msg model =
             , Cmd.none
             )
 
-        OpenDevice ->
+        OpenDevice deviceId ->
+            let
+                gag =
+                    Debug.log "deviceId: " deviceId
+            in
+            ( model, Cmd.none )
+
+        OpenBranch branchId ->
+            let
+                gag =
+                    Debug.log "branchId: " branchId
+            in
             ( model, Cmd.none )
 
 
@@ -401,16 +414,28 @@ viewDashboard dashboard =
         ]
 
 
-viewBranchWithCommand : Branch -> ListGroup.Item Msg
+viewDeviceShortcutWithMessage : DeviceShortcut -> Html Msg
+viewDeviceShortcutWithMessage shortcut =
+    DeviceShortcut.view (OpenDevice shortcut.id) shortcut
+
+
+viewBranchWithCommand : Branch -> Html Msg
 viewBranchWithCommand branch =
-    Branch.view (NewDevice branch) OpenDevice branch
+    Branch.view
+        (NewDevice branch)
+        (OpenBranch branch.id)
+        branch
+        (ul [] <|
+            List.map viewDeviceShortcutWithMessage <|
+                Dict.values branch.shortcuts
+        )
 
 
 viewBranches : DashboardContent -> Html Msg
 viewBranches dashboard =
     case dashboard of
         Loaded branches ->
-            ListGroup.ul <|
+            ul [ class "tree" ] <|
                 List.map viewBranchWithCommand (Dict.values branches)
 
         _ ->

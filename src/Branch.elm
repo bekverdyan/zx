@@ -1,8 +1,9 @@
 module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view)
 
-import Bootstrap.Button as Button
-import Bootstrap.ListGroup as ListGroup
-import Bootstrap.Utilities.Spacing as Spacing
+-- import Bootstrap.Button as Button
+-- import Bootstrap.ListGroup as ListGroup
+-- import Bootstrap.Utilities.Spacing as Spacing
+
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
@@ -125,44 +126,43 @@ removeShortcut id shortcuts =
 -- VIEW
 
 
-view : msg -> msg -> Branch -> ListGroup.Item msg
-view newDeviceCmd openDeviceCmd branch =
-    ListGroup.li []
-        [ span [ class "caret" ] [ text branch.name ]
-        , viewDeviceShortcuts newDeviceCmd openDeviceCmd branch
+view : msg -> msg -> Branch -> Html msg -> Html msg
+view newDeviceCmd openBranchCmd branch shortcuts =
+    li [ id branch.id ]
+        [ label [ attribute "for" branch.id ]
+            [ a [ onClick openBranchCmd ] [ text branch.name ] ]
+        , input
+            [ attribute "checked" ""
+            , attribute "id" branch.id
+            , attribute "value" ""
+            , attribute "type" "checkbox"
+            ]
+            []
+        , shortcuts
         ]
 
 
-viewGenerateDevice : msg -> Branch -> List (ListGroup.CustomItem msg)
-viewGenerateDevice newDeviceCmd branch =
-    [ ListGroup.button
-        [ ListGroup.attrs [ onClick newDeviceCmd ]
-        , ListGroup.dark
-        ]
-        [ text "Create Device" ]
-    ]
+
+-- viewGenerateDevice : msg -> Branch -> List (ListGroup.CustomItem msg)
+-- viewGenerateDevice newDeviceCmd branch =
+--     [ ListGroup.button
+--         [ ListGroup.attrs [ onClick newDeviceCmd ]
+--         , ListGroup.dark
+--         ]
+--         [ text "Create Device" ]
+--     ]
 
 
 viewDeviceShortcuts : msg -> msg -> Branch -> Html msg
 viewDeviceShortcuts newDeviceCmd openDeviceCmd branch =
     let
-        viewWithMessage : DeviceShortcut.Shortcut -> ListGroup.CustomItem msg
+        viewWithMessage : DeviceShortcut.Shortcut -> Html msg
         viewWithMessage deviceShortcut =
             DeviceShortcut.view openDeviceCmd deviceShortcut
     in
-    let
-        devices =
-            List.map
-                viewWithMessage
-            <|
-                Dict.values
-                    branch.shortcuts
-    in
-    div [ class "nested" ]
-        [ ListGroup.custom
-            (List.append
-                devices
-             <|
-                viewGenerateDevice newDeviceCmd branch
-            )
-        ]
+    ul [] <|
+        List.map
+            viewWithMessage
+        <|
+            Dict.values
+                branch.shortcuts
