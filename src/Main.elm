@@ -402,7 +402,11 @@ handleDeviceGeneration salt branch model =
                     FirstDevice <|
                         Dict.singleton device.id device
     in
-    ( updatedDevices, updatedBranches )
+    { model
+        | devices = updatedDevices
+        , dashboard = updatedBranches
+        , editor = DeviceView device
+    }
 
 
 handleBranchGeneration : String -> Data -> Data
