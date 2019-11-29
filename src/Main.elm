@@ -423,6 +423,13 @@ handleBranchGeneration salt dashboard =
                     branch
                     value
 
+        FirstBranch value ->
+            LoadedBranches <|
+                Dict.insert
+                    branch.id
+                    branch
+                    value
+
         _ ->
             FirstBranch <|
                 Dict.singleton
