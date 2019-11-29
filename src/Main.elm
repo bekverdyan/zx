@@ -57,13 +57,24 @@ type alias Document msg =
 
 
 type alias Model =
-    { dashboard : DashboardContent
-    , devices : Maybe Devices
+    { dashboard : Data
+    , devices : Data
+    , editor : Editor
     }
 
 
-type DashboardContent
-    = Loaded Branches
+type Editor
+    = NotSelected
+    | BranchView Branch
+    | DeviceView Device
+    | NotFound
+
+
+type Data
+    = LoadedBranches Branches
+    | LoadedDevices Devices
+    | FirstBranch Branches
+    | FirstDevice Devices
     | Loading
     | Error
 
@@ -114,44 +125,48 @@ subscriptions model =
 -- FLAG
 
 
-pullBranches : D.Value -> DashboardContent
+pullBranches : D.Value -> Data
 pullBranches value =
     handleBranchResult <|
         D.decodeValue decodeBranches value
 
 
-handleBranchResult : Result D.Error Branches -> DashboardContent
+handleBranchResult : Result D.Error Branches -> Data
 handleBranchResult result =
     case result of
         Ok branches ->
-            Loaded branches
+            LoadedBranches branches
 
         Err _ ->
             Error
 
 
-pullDevices : D.Value -> Maybe Devices
+pullDevices : D.Value -> Data
 pullDevices value =
     handleDeviceResult <|
         D.decodeValue decodeDevices value
 
 
-handleDeviceResult : Result D.Error Devices -> Maybe Devices
+handleDeviceResult : Result D.Error Devices -> Data
 handleDeviceResult result =
     case result of
         Ok value ->
-            Just value
+            LoadedDevices value
 
-        Err _ ->
-            Nothing
+        Err message ->
+            let
+                log =
+                    Debug.log "ERRORS: " message
+            in
+            Error
 
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( Model
         (pullBranches flags.branches)
-      <|
-        pullDevices flags.devices
+        (pullDevices flags.devices)
+        NotSelected
     , Cmd.none
     )
 
@@ -194,11 +209,28 @@ type Msg
     | OpenBranch Branch.Identifier
 
 
-pushBranches : DashboardContent -> Cmd Msg
+pushBranches : Data -> Cmd Msg
 pushBranches dashboard =
     case dashboard of
-        Loaded branches ->
+        LoadedBranches branches ->
             saveBranches <| encodeBranches branches
+
+        FirstBranch branches ->
+            saveBranches <| encodeBranches branches
+
+        _ ->
+            -- TODO handle possible errors
+            Cmd.none
+
+
+pushDevices : Data -> Cmd Msg
+pushDevices devices =
+    case devices of
+        LoadedDevices value ->
+            saveDevices <| encodeDevices value
+
+        FirstDevice value ->
+            saveDevices <| encodeDevices value
 
         _ ->
             Cmd.none
@@ -216,69 +248,106 @@ update msg model =
         GenerateDevice ( salt, branch ) ->
             let
                 ( devices, dashboard ) =
-                    handleDeviceGeneration salt branch model
+                    handleDeviceGeneration salt branch ( model.devices, model.dashboard )
             in
             ( { model
-                | devices = Just devices
+                | devices = devices
                 , dashboard = dashboard
               }
             , Cmd.batch
-                [ saveDevices <|
-                    encodeDevices devices
+                [ pushDevices devices
                 , pushBranches dashboard
                 ]
             )
 
         GenerateBranch salt ->
             let
-                updatedBranches =
+                dashboard =
                     handleBranchGeneration salt model.dashboard
             in
             ( { model
-                | dashboard = updatedBranches
+                | dashboard = dashboard
               }
-            , pushBranches updatedBranches
+            , pushBranches dashboard
             )
 
-        PullDevices devices ->
+        PullDevices encoded ->
             ( { model
-                | devices =
-                    handleDeviceResult <|
-                        D.decodeValue decodeDevices devices
+                | devices = pullDevices encoded
               }
             , Cmd.none
             )
 
-        PullBranches branches ->
+        PullBranches encoded ->
             ( { model
-                | dashboard =
-                    handleBranchResult <|
-                        D.decodeValue decodeBranches branches
+                | dashboard = pullBranches encoded
               }
             , Cmd.none
             )
 
         OpenDevice deviceId ->
             let
-                gag =
-                    Debug.log "deviceId: " deviceId
+                device =
+                    case model.devices of
+                        LoadedDevices values ->
+                            Dict.get deviceId values
+
+                        FirstDevice values ->
+                            Dict.get deviceId values
+
+                        _ ->
+                            -- TODO handle possible cases
+                            Nothing
+
+                editor =
+                    case device of
+                        Just value ->
+                            DeviceView value
+
+                        Nothing ->
+                            let
+                                gag =
+                                    Debug.log "device not found"
+                            in
+                            NotFound
             in
-            ( model, Cmd.none )
+            ( { model | editor = editor }
+            , Cmd.none
+            )
 
         OpenBranch branchId ->
             let
-                gag =
-                    Debug.log "branchId: " branchId
+                branch =
+                    case model.dashboard of
+                        LoadedBranches branches ->
+                            Dict.get branchId branches
+
+                        FirstBranch branches ->
+                            Dict.get branchId branches
+
+                        -- TODO handle possible states
+                        _ ->
+                            Nothing
+
+                editor =
+                    case branch of
+                        Just value ->
+                            BranchView value
+
+                        Nothing ->
+                            NotFound
             in
-            ( model, Cmd.none )
+            ( { model | editor = editor }
+            , Cmd.none
+            )
 
 
 
 -- HANDLER
 
 
-handleDeviceGeneration : String -> Branch -> Model -> ( Devices, DashboardContent )
-handleDeviceGeneration salt branch model =
+handleDeviceGeneration : String -> Branch -> ( Data, Data ) -> ( Data, Data )
+handleDeviceGeneration salt branch ( devices, dashboard ) =
     let
         branchShortcut =
             Branch.createShortcut branch
@@ -302,47 +371,63 @@ handleDeviceGeneration salt branch model =
             { branch | shortcuts = updatedShortcuts }
 
         updatedBranches =
-            case model.dashboard of
-                Loaded branches ->
-                    Loaded <|
+            case dashboard of
+                LoadedBranches branches ->
+                    LoadedBranches <|
+                        Dict.insert
+                            updatedBranch.id
+                            updatedBranch
+                            branches
+
+                FirstBranch branches ->
+                    LoadedBranches <|
                         Dict.insert
                             updatedBranch.id
                             updatedBranch
                             branches
 
                 _ ->
-                    Loaded <|
+                    FirstBranch <|
                         Dict.singleton
                             updatedBranch.id
                             updatedBranch
 
         updatedDevices =
-            case model.devices of
-                Just value ->
-                    Dict.insert device.id device value
+            case devices of
+                LoadedDevices value ->
+                    LoadedDevices <|
+                        Dict.insert device.id device value
 
-                Nothing ->
-                    Dict.singleton device.id device
+                FirstDevice value ->
+                    LoadedDevices <|
+                        Dict.insert
+                            device.id
+                            device
+                            value
+
+                _ ->
+                    FirstDevice <|
+                        Dict.singleton device.id device
     in
     ( updatedDevices, updatedBranches )
 
 
-handleBranchGeneration : String -> DashboardContent -> DashboardContent
-handleBranchGeneration salt branches =
+handleBranchGeneration : String -> Data -> Data
+handleBranchGeneration salt dashboard =
     let
         branch =
             Branch.newBranch "եղո" salt
     in
-    case branches of
-        Loaded value ->
-            Loaded <|
+    case dashboard of
+        LoadedBranches value ->
+            LoadedBranches <|
                 Dict.insert
                     branch.id
                     branch
                     value
 
         _ ->
-            Loaded <|
+            FirstBranch <|
                 Dict.singleton
                     branch.id
                     branch
@@ -397,14 +482,17 @@ removeBranch id branches =
 view : Model -> Document Msg
 view model =
     { title = "Դատարկ մարդ"
-    , body = [ viewDashboard model.dashboard ]
+    , body =
+        [ viewDashboard model.dashboard
+        , viewSelectedObject model.editor
+        ]
     }
 
 
-viewDashboard : DashboardContent -> Html Msg
+viewDashboard : Data -> Html Msg
 viewDashboard dashboard =
     div []
-        [ viewBranches dashboard
+        [ viewBranchesInDashboard dashboard
         , Button.button
             [ Button.dark
             , Button.attrs
@@ -414,15 +502,32 @@ viewDashboard dashboard =
         ]
 
 
+viewSelectedObject : Editor -> Html Msg
+viewSelectedObject object =
+    case object of
+        NotSelected ->
+            text "EMPTY VIEW"
+
+        BranchView branch ->
+            Branch.view
+                (NewDevice branch)
+                branch
+
+        DeviceView device ->
+            text device.id
+
+        NotFound ->
+            text "NOT FOUND"
+
+
 viewDeviceShortcutWithMessage : DeviceShortcut -> Html Msg
 viewDeviceShortcutWithMessage shortcut =
     DeviceShortcut.view (OpenDevice shortcut.id) shortcut
 
 
-viewBranchWithCommand : Branch -> Html Msg
-viewBranchWithCommand branch =
-    Branch.view
-        (NewDevice branch)
+viewBranchInDashboardCmd : Branch -> Html Msg
+viewBranchInDashboardCmd branch =
+    Branch.viewInDashboard
         (OpenBranch branch.id)
         branch
         (ul [] <|
@@ -431,12 +536,26 @@ viewBranchWithCommand branch =
         )
 
 
-viewBranches : DashboardContent -> Html Msg
-viewBranches dashboard =
+viewBranchesInDashboard : Data -> Html Msg
+viewBranchesInDashboard dashboard =
     case dashboard of
-        Loaded branches ->
+        LoadedBranches branches ->
             ul [ class "tree" ] <|
-                List.map viewBranchWithCommand (Dict.values branches)
+                List.map
+                    viewBranchInDashboardCmd
+                    (Dict.values branches)
+
+        FirstBranch branches ->
+            ul [ class "tree" ] <|
+                List.map
+                    viewBranchInDashboardCmd
+                    (Dict.values branches)
+
+        Loading ->
+            text "Please wait.."
+
+        Error ->
+            text "Error Loading branches"
 
         _ ->
-            text "Oops !!! You have no branches yet"
+            text "I don't know how to view this"

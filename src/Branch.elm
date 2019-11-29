@@ -1,9 +1,9 @@
-module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view)
+module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view, viewInDashboard)
 
--- import Bootstrap.Button as Button
 -- import Bootstrap.ListGroup as ListGroup
 -- import Bootstrap.Utilities.Spacing as Spacing
 
+import Bootstrap.Button as Button
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
@@ -126,8 +126,20 @@ removeShortcut id shortcuts =
 -- VIEW
 
 
-view : msg -> msg -> Branch -> Html msg -> Html msg
-view newDeviceCmd openBranchCmd branch shortcuts =
+view : msg -> Branch -> Html msg
+view newDeviceCmd branch =
+    div []
+        [ text branch.id
+        , Button.button
+            [ Button.primary
+            , Button.attrs [ onClick newDeviceCmd ]
+            ]
+            [ text "Generate new Device" ]
+        ]
+
+
+viewInDashboard : msg -> Branch -> Html msg -> Html msg
+viewInDashboard openBranchCmd branch shortcuts =
     li [ id branch.id ]
         [ label [ attribute "for" branch.id ]
             [ a [ onClick openBranchCmd ] [ text branch.name ] ]
