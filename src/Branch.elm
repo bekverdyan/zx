@@ -1,9 +1,16 @@
-module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch)
+module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view, viewInDashboard)
 
+-- import Bootstrap.ListGroup as ListGroup
+-- import Bootstrap.Utilities.Spacing as Spacing
+
+import Bootstrap.Button as Button
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -66,13 +73,13 @@ encode branch =
     E.object
         [ ( "id", E.string branch.id )
         , ( "name", E.string branch.name )
-        , encodeShortcuts branch.shortcuts
+        , ( "shortcuts", encodeShortcuts branch.shortcuts )
         ]
 
 
-encodeShortcuts : Shortcuts -> ( String, E.Value )
+encodeShortcuts : Shortcuts -> E.Value
 encodeShortcuts shortcuts =
-    ( "shortcuts", E.dict idToString DeviceShortcut.encode shortcuts )
+    E.dict idToString DeviceShortcut.encode shortcuts
 
 
 idToString : Identifier -> String
@@ -89,12 +96,12 @@ decoder =
     D.map3 Branch
         (D.field "id" D.string)
         (D.field "name" D.string)
-        decodeShortcut
+        (D.field "shortcuts" decodeShortcuts)
 
 
-decodeShortcut : D.Decoder Shortcuts
-decodeShortcut =
-    D.field "shortcuts" <| D.dict DeviceShortcut.decoder
+decodeShortcuts : D.Decoder Shortcuts
+decodeShortcuts =
+    D.dict DeviceShortcut.decoder
 
 
 
@@ -113,3 +120,61 @@ addShortcut shortcut shortcuts =
 removeShortcut : Identifier -> Shortcuts -> Shortcuts
 removeShortcut id shortcuts =
     Dict.remove id shortcuts
+
+
+
+-- VIEW
+
+
+view : msg -> Branch -> Html msg
+view newDeviceCmd branch =
+    div []
+        [ text branch.id
+        , Button.button
+            [ Button.primary
+            , Button.attrs [ onClick newDeviceCmd ]
+            ]
+            [ text "Generate new Device" ]
+        ]
+
+
+viewInDashboard : msg -> Branch -> Html msg -> Html msg
+viewInDashboard openBranchCmd branch shortcuts =
+    li [ id branch.id ]
+        [ label [ attribute "for" branch.id ]
+            [ a [ onClick openBranchCmd ] [ text branch.name ] ]
+        , input
+            [ attribute "checked" ""
+            , attribute "id" branch.id
+            , attribute "value" ""
+            , attribute "type" "checkbox"
+            ]
+            []
+        , shortcuts
+        ]
+
+
+
+-- viewGenerateDevice : msg -> Branch -> List (ListGroup.CustomItem msg)
+-- viewGenerateDevice newDeviceCmd branch =
+--     [ ListGroup.button
+--         [ ListGroup.attrs [ onClick newDeviceCmd ]
+--         , ListGroup.dark
+--         ]
+--         [ text "Create Device" ]
+--     ]
+
+
+viewDeviceShortcuts : msg -> msg -> Branch -> Html msg
+viewDeviceShortcuts newDeviceCmd openDeviceCmd branch =
+    let
+        viewWithMessage : DeviceShortcut.Shortcut -> Html msg
+        viewWithMessage deviceShortcut =
+            DeviceShortcut.view openDeviceCmd deviceShortcut
+    in
+    ul [] <|
+        List.map
+            viewWithMessage
+        <|
+            Dict.values
+                branch.shortcuts

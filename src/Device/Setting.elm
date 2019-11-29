@@ -273,163 +273,209 @@ decodeVariables =
         (D.field "bonusThreshold" D.int)
 
 
-newHopper : Int -> Hopper
-newHopper value =
+decodeHopperFaze : Maybe Int -> Hopper
+decodeHopperFaze value =
     case value of
-        0 ->
+        Just 0 ->
             Hopper Disabled
 
-        1 ->
+        Just 1 ->
             Hopper CcTalk
 
-        2 ->
+        Just 2 ->
             Hopper Pulse
 
-        _ ->
+        Just _ ->
+            Hopper NoFaze
+
+        Nothing ->
             Hopper NoFaze
 
 
 decodeHopper : D.Decoder Hopper
 decodeHopper =
-    D.map newHopper (D.field "hopper" D.int)
+    let
+        maybeValue =
+            D.field "hopper" <| D.maybe D.int
+    in
+    D.map decodeHopperFaze maybeValue
 
 
-newHopperMode : Int -> HopperMode
-newHopperMode value =
+
+-- D.map newHopper (D.field "hopper" D.nullable)
+
+
+decodeHopperModeFaze : Maybe Int -> HopperMode
+decodeHopperModeFaze value =
     case value of
-        0 ->
+        Just 0 ->
             HopperMode Mode_1
 
-        1 ->
+        Just 1 ->
             HopperMode Mode_2
 
-        _ ->
+        Just _ ->
+            HopperMode NoFaze
+
+        Nothing ->
             HopperMode NoFaze
 
 
 decodeHopperMode : D.Decoder HopperMode
 decodeHopperMode =
-    D.map newHopperMode (D.field "hopperMode" D.int)
+    D.map decodeHopperModeFaze <|
+        D.field "hopperMode" <|
+            D.maybe D.int
 
 
-newBillValidator : Int -> BillValidator
-newBillValidator value =
+decodeBillValidatorFaze : Maybe Int -> BillValidator
+decodeBillValidatorFaze value =
     case value of
-        0 ->
+        Just 0 ->
             BillValidator Disabled
 
-        1 ->
+        Just 1 ->
             BillValidator CcTalk
 
-        _ ->
+        Just _ ->
+            BillValidator NoFaze
+
+        Nothing ->
             BillValidator NoFaze
 
 
 decodeBillValidator : D.Decoder BillValidator
 decodeBillValidator =
-    D.map newBillValidator (D.field "billValidator" D.int)
+    D.map decodeBillValidatorFaze <|
+        D.field "billValidator" <|
+            D.maybe D.int
 
 
-newRfidReader1 : Int -> RfidReader1
-newRfidReader1 value =
+decodeRfidReader1Faze : Maybe Int -> RfidReader1
+decodeRfidReader1Faze value =
     case value of
-        0 ->
+        Just 0 ->
             RfidReader1 Disabled
 
-        1 ->
+        Just 1 ->
             RfidReader1 Enabled
 
-        _ ->
+        Just _ ->
+            RfidReader1 NoFaze
+
+        Nothing ->
             RfidReader1 NoFaze
 
 
 decodeRfidReader1 : D.Decoder RfidReader1
 decodeRfidReader1 =
-    D.map newRfidReader1 (D.field "rfidReader1" D.int)
+    D.map decodeRfidReader1Faze <|
+        D.field "rfidReader1" <|
+            D.maybe D.int
 
 
-newRfidReader2 : Int -> RfidReader2
-newRfidReader2 value =
+decodeRfidReader2Faze : Maybe Int -> RfidReader2
+decodeRfidReader2Faze value =
     case value of
-        0 ->
+        Just 0 ->
             RfidReader2 Disabled
 
-        1 ->
+        Just 1 ->
             RfidReader2 Enabled
 
-        _ ->
+        Just _ ->
+            RfidReader2 NoFaze
+
+        Nothing ->
             RfidReader2 NoFaze
 
 
 decodeRfidReader2 : D.Decoder RfidReader2
 decodeRfidReader2 =
-    D.map newRfidReader2 (D.field "rfidReader2" D.int)
+    D.map decodeRfidReader2Faze <|
+        D.field "rfidReader2" <|
+            D.maybe D.int
 
 
-newDispenser : Int -> Dispenser
-newDispenser value =
+decodeDispenserFaze : Maybe Int -> Dispenser
+decodeDispenserFaze value =
     case value of
-        0 ->
+        Just 0 ->
             Dispenser Disabled
 
-        1 ->
+        Just 1 ->
             Dispenser CRT_531
 
-        2 ->
+        Just 2 ->
             Dispenser TCD_820M
 
-        _ ->
+        Just _ ->
+            Dispenser NoFaze
+
+        Nothing ->
             Dispenser NoFaze
 
 
 decodeDispenser : D.Decoder Dispenser
 decodeDispenser =
-    D.map newDispenser (D.field "dispenser" D.int)
+    D.map decodeDispenserFaze <|
+        D.field "dispenser" <|
+            D.maybe D.int
 
 
-newCardOut : Int -> CardOut
-newCardOut value =
+decodeCardOutFaze : Maybe Int -> CardOut
+decodeCardOutFaze value =
     case value of
-        0 ->
+        Just 0 ->
             CardOut ToGate
 
-        1 ->
+        Just 1 ->
             CardOut FullOut
 
-        _ ->
+        Just _ ->
+            CardOut NoFaze
+
+        Nothing ->
             CardOut NoFaze
 
 
 decodeCardOut : D.Decoder CardOut
 decodeCardOut =
-    D.map newCardOut (D.field "cardOut" D.int)
+    D.map decodeCardOutFaze <|
+        D.field "cardOut" <|
+            D.maybe D.int
 
 
-newNetwork : Int -> Network
-newNetwork value =
+decodeNetworkFaze : Maybe Int -> Network
+decodeNetworkFaze value =
     case value of
-        0 ->
+        Just 0 ->
             Network None
 
-        1 ->
+        Just 1 ->
             Network RS_485
 
-        2 ->
+        Just 2 ->
             Network Can
 
-        3 ->
+        Just 3 ->
             Network Ethernet
 
-        4 ->
+        Just 4 ->
             Network WiFi
 
-        _ ->
+        Just _ ->
+            Network NoFaze
+
+        Nothing ->
             Network NoFaze
 
 
 decodeNetwork : D.Decoder Network
 decodeNetwork =
-    D.map newNetwork (D.field "network" D.int)
+    D.map decodeNetworkFaze <|
+        D.field "network" <|
+            D.maybe D.int
 
 
 decodeSwitches : D.Decoder Switches
@@ -461,6 +507,7 @@ encodeVariables variables =
         , ( "deviceId", E.string variables.deviceId )
         , ( "serverCode", E.string variables.serverCode )
         , ( "bonusPercent", E.int variables.bonusPercent )
+        , ( "bonusThreshold", E.int variables.bonusThreshold )
         ]
 
 

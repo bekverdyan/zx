@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css'>
+
+  <!-- Using 'https://codepen.io/bekverdyan/pen/RwwXJVy' Tree View Pure CSS -->
+  <link rel="stylesheet" href="tree-view.css">
   <script src="zx.js"></script>
 </head>
 
@@ -13,9 +17,30 @@
     <div id="elm"></div>
   </div>
   <script>
+    var branches = localStorage.getItem('branches');
+    var devices = localStorage.getItem('devices')
+    var parsedBranches = branches ? JSON.parse(branches) : null;
+    var parsedDevices = devices ? JSON.parse(devices) : null;
+
+
     var app = Elm.Main.init({
-      node: document.getElementById('elm')
+      node: document.getElementById('elm'),
+      flags: { branches: parsedBranches,
+               devices: parsedDevices
+             }
     });
+
+    app.ports.saveBranches.subscribe(function(data) {
+      localStorage.setItem('branches', JSON.stringify(data));
+    });
+
+    app.ports.saveDevices.subscribe(function(data) {
+      localStorage.setItem('devices', JSON.stringify(data))
+    })
+
+    app.ports.loadBranches.send(parsedBranches);
+
+    app.ports.loadDevices.send(parsedDevices);
   </script>
 </body>
 </html>
