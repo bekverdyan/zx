@@ -246,17 +246,10 @@ update msg model =
             ( model, requestBranchGeneration )
 
         GenerateDevice ( salt, branch ) ->
-            let
-                ( devices, dashboard ) =
-                    handleDeviceGeneration salt branch ( model.devices, model.dashboard )
-            in
-            ( { model
-                | devices = devices
-                , dashboard = dashboard
-              }
+            ( handleDeviceGeneration salt branch model
             , Cmd.batch
-                [ pushDevices devices
-                , pushBranches dashboard
+                [ pushDevices model.devices
+                , pushBranches model.dashboard
                 ]
             )
 
@@ -346,8 +339,8 @@ update msg model =
 -- HANDLER
 
 
-handleDeviceGeneration : String -> Branch -> ( Data, Data ) -> ( Data, Data )
-handleDeviceGeneration salt branch ( devices, dashboard ) =
+handleDeviceGeneration : String -> Branch -> Model -> Model
+handleDeviceGeneration salt branch model =
     let
         branchShortcut =
             Branch.createShortcut branch
@@ -371,7 +364,7 @@ handleDeviceGeneration salt branch ( devices, dashboard ) =
             { branch | shortcuts = updatedShortcuts }
 
         updatedBranches =
-            case dashboard of
+            case model.dashboard of
                 LoadedBranches branches ->
                     LoadedBranches <|
                         Dict.insert
@@ -393,7 +386,7 @@ handleDeviceGeneration salt branch ( devices, dashboard ) =
                             updatedBranch
 
         updatedDevices =
-            case devices of
+            case model.devices of
                 LoadedDevices value ->
                     LoadedDevices <|
                         Dict.insert device.id device value
