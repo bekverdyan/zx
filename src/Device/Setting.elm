@@ -1,5 +1,8 @@
 module Device.Setting exposing (Settings, decoder, encode, newChannels, newConfig)
 
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -698,16 +701,26 @@ encodeChannels channels =
 
 encode : Settings -> E.Value
 encode settings =
-    let
-        value =
-            case settings of
-                Channels ( actual, defined ) ->
-                    encodeChannels ( actual, defined )
+    case settings of
+        Channels ( actual, defined ) ->
+            encodeChannels ( actual, defined )
 
-                Config parameters ->
-                    encodeParameters parameters
-    in
-    value
+        Config parameters ->
+            encodeParameters parameters
+
+
+
+-- VIEW
+
+
+view : Settings -> Html msg
+view settings =
+    case settings of
+        Channels ( actual, defined ) ->
+            text "actual and defined"
+
+        Config parameters ->
+            text "parameters"
 
 
 
