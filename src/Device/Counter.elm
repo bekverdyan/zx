@@ -1,5 +1,8 @@
-module Device.Counter exposing (Counters, decoder, encode, newCounters)
+module Device.Counter exposing (Counters, decoder, encode, newCounters, view)
 
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -103,6 +106,15 @@ decodePointer =
     D.map2 createPointer
         (D.field "daily" D.int)
         (D.field "total" D.int)
+
+
+
+-- VIEW
+
+
+view : Counters -> Html msg
+view counters =
+    text "counters"
 
 
 

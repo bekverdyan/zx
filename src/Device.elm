@@ -1,8 +1,10 @@
-module Device exposing (Device, DeviceType(..), Devices, Identifier, createShortcut, decoder, encode, idToString, newDevice)
+module Device exposing (Device, DeviceType(..), Devices, Identifier, createShortcut, decoder, encode, idToString, newDevice, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
+import Bootstrap.ListGroup as ListGroup
+import Bootstrap.Tab as Tab
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -14,6 +16,12 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
+
+
+type alias ViewModel =
+    { device : Device
+    , tabState : Tab.State
+    }
 
 
 type alias Devices =
@@ -67,6 +75,10 @@ type DeviceType
     | Exchange
 
 
+type Msg
+    = TabMsg Tab.State
+
+
 
 -- MAP
 
@@ -74,6 +86,15 @@ type DeviceType
 idToString : Identifier -> String
 idToString id =
     id
+
+
+
+-- INIT
+
+
+init : Device -> ViewModel
+init device =
+    ViewModel device Tab.initialState
 
 
 
@@ -193,15 +214,45 @@ view : Device -> Html msg
 view device =
     Card.config []
         |> Card.header [ class "text-center" ]
-            [ h3 [ Spacing.mt2 ] [ text "Custom Card Header" ]
+            [ h3 [ Spacing.mt2 ] [ text device.id ]
             ]
         |> Card.block []
-            [ Block.titleH4 [] [ text "Card title" ]
-            , Block.text [] [ text "Some quick example text to build on the card title and make up the bulk of the card's content." ]
+            [ Block.titleH4 [] [ viewInfo device.info ]
+            , Block.text []
+                [ viewTabs device.counters device.settings ]
             , Block.custom <|
-                Button.button [ Button.primary ] [ text "Go somewhere" ]
+                Button.button [ Button.primary ]
+                    [ text "Go somewhere" ]
             ]
         |> Card.view
+
+
+viewInfo : Info -> Html msg
+viewInfo ( model, version, softVersion ) =
+    Card.config []
+        |> Card.listGroup
+            [ ListGroup.li [ ListGroup.success ]
+                [ text <| "Model: " ++ model ]
+            , ListGroup.li [ ListGroup.info ]
+                [ text <| "Version: " ++ version ]
+            , ListGroup.li [ ListGroup.warning ]
+                [ text <| "Soft Version: " ++ softVersion ]
+            ]
+        |> Card.view
+
+
+
+-- TODO View counters and settings in Tabs
+
+
+viewTabs : Counter.Counters -> Setting.Settings -> Html msg
+viewTabs counters settings =
+    div []
+        [ label [] [ text "counters below: " ]
+        , Counter.view counters
+        , label [] [ text "settings below: " ]
+        , Setting.view settings
+        ]
 
 
 

@@ -1,4 +1,4 @@
-module Device.Setting exposing (Settings, decoder, encode, newChannels, newConfig)
+module Device.Setting exposing (Settings, decoder, encode, newChannels, newConfig, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)

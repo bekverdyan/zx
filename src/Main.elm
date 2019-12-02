@@ -518,7 +518,7 @@ viewSelectedObject object =
                 branch
 
         DeviceView device ->
-            text device.id
+            Device.view device
 
         NotFound ->
             text "NOT FOUND"
