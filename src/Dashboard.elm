@@ -50,20 +50,24 @@ type Msg
 
 view : Model -> Html Msg
 view model =
-    case model of
-        Empty ->
-            text "you have no branches yet"
+    let
+        content =
+            case model of
+                Empty ->
+                    text "You have no branches yet!"
 
-        Branches branches ->
-            div []
-                [ viewBranches branches
-                , Button.button
-                    [ Button.dark
-                    , Button.attrs
-                        [ Spacing.ml1, onClick NewBranch ]
-                    ]
-                    [ text "Create Branch" ]
-                ]
+                Branches branches ->
+                    viewBranches branches
+    in
+    div []
+        [ content
+        , Button.button
+            [ Button.dark
+            , Button.attrs
+                [ Spacing.ml1, onClick NewBranch ]
+            ]
+            [ text "Create Branch" ]
+        ]
 
 
 viewBranches : Branches -> Html Msg
