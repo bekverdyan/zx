@@ -13,6 +13,9 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
+import Random
+import Random.Char as RandomChar
+import Random.String as RandomString
 
 
 type alias Branch =
@@ -120,6 +123,42 @@ addShortcut shortcut shortcuts =
 removeShortcut : Identifier -> Shortcuts -> Shortcuts
 removeShortcut id shortcuts =
     Dict.remove id shortcuts
+
+
+
+-- UPDATE
+
+
+type Msg
+    = NewDevice Branch
+    | GenerateDevice ( String, Branch )
+
+
+update : Msg -> Branch -> ( Branch, Cmd Msg )
+update msg branch =
+    case msg of
+        NewDevice container ->
+            ( container, requestDeviceGeneration container )
+
+        GenerateDevice ( salt, container ) ->
+            ( branch, Cmd.none )
+
+
+requestDeviceGeneration : Branch -> Cmd Msg
+requestDeviceGeneration branch =
+    let
+        constant =
+            Random.constant branch
+    in
+    let
+        salt =
+            RandomString.string 6 RandomChar.armenian
+    in
+    let
+        random =
+            Random.pair salt constant
+    in
+    Random.generate GenerateDevice <| random
 
 
 
