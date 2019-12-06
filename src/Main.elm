@@ -1,8 +1,7 @@
 port module Main exposing (Model, init, main)
 
--- import Bootstrap.ListGroup as ListGroup
-
 import Bootstrap.Button as Button
+import Bootstrap.Tab as Tab
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch
 import Branch.Shortcut as BranchShortcut
@@ -11,6 +10,7 @@ import Debug
 import Device
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
+import Editor as Editor
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -59,15 +59,8 @@ type alias Document msg =
 type alias Model =
     { dashboard : Data
     , devices : Data
-    , editor : Editor
+    , editor : Editor.Model
     }
-
-
-type Editor
-    = NotSelected
-    | BranchView Branch
-    | DeviceView Device
-    | NotFound
 
 
 type Data
@@ -166,7 +159,7 @@ init flags =
     ( Model
         (pullBranches flags.branches)
         (pullDevices flags.devices)
-        NotSelected
+        Editor.NotSelected
     , Cmd.none
     )
 
@@ -207,6 +200,7 @@ type Msg
     | PullBranches E.Value
     | OpenDevice DeviceShortcut.Identifier
     | OpenBranch Branch.Identifier
+    | EditorMsg Editor.Msg
 
 
 pushBranches : Data -> Cmd Msg
@@ -295,14 +289,16 @@ update msg model =
                 editor =
                     case device of
                         Just value ->
-                            DeviceView value
+                            let
+                                deviceInEditor =
+                                    { device = value
+                                    , tabState = Tab.initialState
+                                    }
+                            in
+                            Editor.Device deviceInEditor
 
                         Nothing ->
-                            let
-                                gag =
-                                    Debug.log "device not found"
-                            in
-                            NotFound
+                            Editor.NotFound
             in
             ( { model | editor = editor }
             , Cmd.none
@@ -325,14 +321,21 @@ update msg model =
                 editor =
                     case branch of
                         Just value ->
-                            BranchView value
+                            Editor.Branch value
 
                         Nothing ->
-                            NotFound
+                            Editor.NotFound
             in
             ( { model | editor = editor }
             , Cmd.none
             )
+
+        EditorMsg editorMessage ->
+            let
+                ( editor, command ) =
+                    Editor.update editorMessage model.editor
+            in
+            ( { model | editor = editor }, Cmd.map EditorMsg command )
 
 
 
@@ -401,11 +404,16 @@ handleDeviceGeneration salt branch model =
                 _ ->
                     FirstDevice <|
                         Dict.singleton device.id device
+
+        deviceInEditor =
+            { device = device
+            , tabState = Tab.initialState
+            }
     in
     { model
         | devices = updatedDevices
         , dashboard = updatedBranches
-        , editor = DeviceView device
+        , editor = Editor.Device deviceInEditor
     }
 
 
@@ -488,7 +496,7 @@ view model =
     { title = "Դատարկ մարդ"
     , body =
         [ viewDashboard model.dashboard
-        , viewSelectedObject model.editor
+        , Html.map EditorMsg <| Editor.view model.editor
         ]
     }
 
@@ -504,24 +512,6 @@ viewDashboard dashboard =
             ]
             [ text "Create Branch" ]
         ]
-
-
-viewSelectedObject : Editor -> Html Msg
-viewSelectedObject object =
-    case object of
-        NotSelected ->
-            text "EMPTY VIEW"
-
-        BranchView branch ->
-            Branch.view
-                (NewDevice branch)
-                branch
-
-        DeviceView device ->
-            Device.view device
-
-        NotFound ->
-            text "NOT FOUND"
 
 
 viewDeviceShortcutWithMessage : DeviceShortcut -> Html Msg

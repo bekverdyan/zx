@@ -1,4 +1,4 @@
-module Device exposing (Device, DeviceType(..), Devices, Identifier, createShortcut, decoder, encode, idToString, newDevice, view)
+module Device exposing (Device, DeviceType(..), Devices, Identifier, Msg(..), ViewModel, createShortcut, decoder, encode, idToString, newDevice, update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
@@ -8,6 +8,7 @@ import Bootstrap.Tab as Tab
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
+import Debug
 import Device.Counter as Counter
 import Device.Setting as Setting
 import Device.Shortcut as DeviceShortcut
@@ -76,7 +77,7 @@ type DeviceType
 
 
 type Msg
-    = TabMsg Tab.State
+    = DeviceTabMsg Tab.State
 
 
 
@@ -207,19 +208,34 @@ decodeInfo =
 
 
 
--- TODO view
+-- UPDATE
 
 
-view : Device -> Html msg
-view device =
+update : Msg -> ViewModel -> ( ViewModel, Cmd Msg )
+update msg viewModel =
+    case msg of
+        DeviceTabMsg state ->
+            ( { viewModel | tabState = state }, Cmd.none )
+
+
+
+-- VIEW
+
+
+view : ViewModel -> Html Msg
+view model =
     Card.config []
         |> Card.header [ class "text-center" ]
-            [ h3 [ Spacing.mt2 ] [ text device.id ]
+            [ h3 [ Spacing.mt2 ] [ text model.device.id ]
             ]
         |> Card.block []
-            [ Block.titleH4 [] [ viewInfo device.info ]
+            [ Block.titleH4 [] [ viewInfo model.device.info ]
             , Block.text []
-                [ viewTabs device.counters device.settings ]
+                [ viewTabs
+                    model.device.counters
+                    model.device.settings
+                    model.tabState
+                ]
             , Block.custom <|
                 Button.button [ Button.primary ]
                     [ text "Go somewhere" ]
@@ -227,7 +243,7 @@ view device =
         |> Card.view
 
 
-viewInfo : Info -> Html msg
+viewInfo : Info -> Html Msg
 viewInfo ( model, version, softVersion ) =
     Card.config []
         |> Card.listGroup
@@ -245,14 +261,35 @@ viewInfo ( model, version, softVersion ) =
 -- TODO View counters and settings in Tabs
 
 
-viewTabs : Counter.Counters -> Setting.Settings -> Html msg
-viewTabs counters settings =
-    div []
-        [ label [] [ text "counters below: " ]
-        , Counter.view counters
-        , label [] [ text "settings below: " ]
-        , Setting.view settings
-        ]
+viewTabs :
+    Counter.Counters
+    -> Setting.Settings
+    -> Tab.State
+    -> Html Msg
+viewTabs counters settings state =
+    Tab.config
+        DeviceTabMsg
+        |> Tab.items
+            [ Tab.item
+                { id = "counters"
+                , link = Tab.link [] [ text "Counters" ]
+                , pane =
+                    Tab.pane [ Spacing.mt3 ]
+                        [ h4 [] [ text "Exo" ]
+                        , p [] [ Counter.view counters ]
+                        ]
+                }
+            , Tab.item
+                { id = "settings"
+                , link = Tab.link [] [ text "Settings" ]
+                , pane =
+                    Tab.pane [ Spacing.mt3 ]
+                        [ h4 [] [ text "Exo" ]
+                        , p [] [ Setting.view settings ]
+                        ]
+                }
+            ]
+        |> Tab.view state
 
 
 
