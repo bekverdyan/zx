@@ -1,8 +1,5 @@
 module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view, viewInDashboard)
 
--- import Bootstrap.ListGroup as ListGroup
--- import Bootstrap.Utilities.Spacing as Spacing
-
 import Bootstrap.Button as Button
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -127,41 +124,6 @@ removeShortcut id shortcuts =
 
 
 -- UPDATE
-
-
-type Msg
-    = NewDevice Branch
-    | GenerateDevice ( String, Branch )
-
-
-update : Msg -> Branch -> ( Branch, Cmd Msg )
-update msg branch =
-    case msg of
-        NewDevice container ->
-            ( container, requestDeviceGeneration container )
-
-        GenerateDevice ( salt, container ) ->
-            ( branch, Cmd.none )
-
-
-requestDeviceGeneration : Branch -> Cmd Msg
-requestDeviceGeneration branch =
-    let
-        constant =
-            Random.constant branch
-    in
-    let
-        salt =
-            RandomString.string 6 RandomChar.armenian
-    in
-    let
-        random =
-            Random.pair salt constant
-    in
-    Random.generate GenerateDevice <| random
-
-
-
 -- VIEW
 
 
@@ -191,29 +153,3 @@ viewInDashboard openBranchCmd branch shortcuts =
             []
         , shortcuts
         ]
-
-
-
--- viewGenerateDevice : msg -> Branch -> List (ListGroup.CustomItem msg)
--- viewGenerateDevice newDeviceCmd branch =
---     [ ListGroup.button
---         [ ListGroup.attrs [ onClick newDeviceCmd ]
---         , ListGroup.dark
---         ]
---         [ text "Create Device" ]
---     ]
-
-
-viewDeviceShortcuts : msg -> msg -> Branch -> Html msg
-viewDeviceShortcuts newDeviceCmd openDeviceCmd branch =
-    let
-        viewWithMessage : DeviceShortcut.Shortcut -> Html msg
-        viewWithMessage deviceShortcut =
-            DeviceShortcut.view openDeviceCmd deviceShortcut
-    in
-    ul [] <|
-        List.map
-            viewWithMessage
-        <|
-            Dict.values
-                branch.shortcuts
