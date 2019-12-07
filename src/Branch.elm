@@ -1,8 +1,5 @@
 module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view, viewInDashboard)
 
--- import Bootstrap.ListGroup as ListGroup
--- import Bootstrap.Utilities.Spacing as Spacing
-
 import Bootstrap.Button as Button
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -123,6 +120,7 @@ removeShortcut id shortcuts =
 
 
 
+-- UPDATE
 -- VIEW
 
 
@@ -152,29 +150,3 @@ viewInDashboard openBranchCmd branch shortcuts =
             []
         , shortcuts
         ]
-
-
-
--- viewGenerateDevice : msg -> Branch -> List (ListGroup.CustomItem msg)
--- viewGenerateDevice newDeviceCmd branch =
---     [ ListGroup.button
---         [ ListGroup.attrs [ onClick newDeviceCmd ]
---         , ListGroup.dark
---         ]
---         [ text "Create Device" ]
---     ]
-
-
-viewDeviceShortcuts : msg -> msg -> Branch -> Html msg
-viewDeviceShortcuts newDeviceCmd openDeviceCmd branch =
-    let
-        viewWithMessage : DeviceShortcut.Shortcut -> Html msg
-        viewWithMessage deviceShortcut =
-            DeviceShortcut.view openDeviceCmd deviceShortcut
-    in
-    ul [] <|
-        List.map
-            viewWithMessage
-        <|
-            Dict.values
-                branch.shortcuts
