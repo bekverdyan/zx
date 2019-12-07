@@ -1,4 +1,4 @@
-module Device exposing (Device, DeviceType(..), Devices, Identifier, Msg(..), ViewModel, createShortcut, decoder, encode, idToString, newDevice, update, view)
+module Device exposing (Device, DeviceType(..), Identifier, Msg(..), ViewModel, createShortcut, decoder, encode, idToString, newDevice, update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
@@ -23,10 +23,6 @@ type alias ViewModel =
     { device : Device
     , tabState : Tab.State
     }
-
-
-type alias Devices =
-    List Device
 
 
 type alias BranchShortcut =
@@ -74,10 +70,6 @@ type alias SoftVersion =
 type DeviceType
     = Washbox
     | Exchange
-
-
-type Msg
-    = DeviceTabMsg Tab.State
 
 
 
@@ -209,6 +201,10 @@ decodeInfo =
 
 
 -- UPDATE
+
+
+type Msg
+    = DeviceTabMsg Tab.State
 
 
 update : Msg -> ViewModel -> ( ViewModel, Cmd Msg )

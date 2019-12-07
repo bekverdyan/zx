@@ -1,8 +1,9 @@
-module Dashboard exposing (Model(..), view)
+module Dashboard exposing (Model(..), Msg(..), update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch
+import Debug
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
 import Html exposing (..)
@@ -13,6 +14,7 @@ import Html.Events exposing (..)
 type Model
     = Empty
     | Branches Branches
+    | Error
 
 
 type alias Branches =
@@ -32,19 +34,27 @@ type alias DeviceShortcut =
 
 
 type Msg
-    = OpenBranch Branch.Identifier
-    | OpenDevice DeviceShortcut.Identifier
+    = LoadBranches Branches
+    | GetBranch Branch.Identifier
+    | GetDevice DeviceShortcut.Identifier
     | NewBranch
-    | LoadBranches
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        LoadBranches branches ->
+            ( Branches branches, Cmd.none )
+
+        _ ->
+            let
+                gag =
+                    Debug.log "Operation not permited" "!"
+            in
+            ( model, Cmd.none )
 
 
 
--- update : Msg -> Model -> (Model, Cmd Msg)
--- update msg model =
---   case msg of
---     OpenBranch Branch ->
---       -
---
 -- VIEW
 
 
@@ -58,6 +68,9 @@ view model =
 
                 Branches branches ->
                     viewBranches branches
+
+                Error ->
+                    text "Failed to load branches!"
     in
     div []
         [ content
@@ -81,7 +94,7 @@ viewBranches branches =
 viewBranchWithCmd : Branch -> Html Msg
 viewBranchWithCmd branch =
     Branch.viewInDashboard
-        (OpenBranch branch.id)
+        (GetBranch branch.id)
         branch
         (ul [] <|
             List.map viewDeviceShortcutWithCmd <|
@@ -91,4 +104,4 @@ viewBranchWithCmd branch =
 
 viewDeviceShortcutWithCmd : DeviceShortcut -> Html Msg
 viewDeviceShortcutWithCmd shortcut =
-    DeviceShortcut.view (OpenDevice shortcut.id) shortcut
+    DeviceShortcut.view (GetDevice shortcut.id) shortcut

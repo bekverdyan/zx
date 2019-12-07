@@ -1,4 +1,4 @@
-module Editor exposing (Model(..), Msg, update, view)
+module Editor exposing (Model(..), Msg(..), update, view)
 
 import Branch as Branch
 import Debug
@@ -31,8 +31,9 @@ type alias Device =
 
 type Msg
     = DeviceMsg Device.Msg
-    | OpenBranch Branch
     | OpenDevice Device.ViewModel
+    | OpenBranch Branch
+    | NewDevice Branch
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -52,7 +53,7 @@ update msg model =
                 _ ->
                     let
                         gag =
-                            Debug.log "Operation not permited"
+                            Debug.log "Operation not permited" "!"
                     in
                     ( model, Cmd.none )
 
@@ -61,6 +62,9 @@ update msg model =
 
         OpenDevice device ->
             ( Device device, Cmd.none )
+
+        NewDevice branch ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -73,7 +77,12 @@ view model =
             h1 [] [ text "Not found" ]
 
         Branch branch ->
-            text branch.name
+            let
+                viewBranch : Branch -> Html Msg
+                viewBranch data =
+                    Branch.view (NewDevice data) data
+            in
+            viewBranch branch
 
         Device viewModel ->
             Html.map DeviceMsg <| Device.view viewModel

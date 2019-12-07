@@ -6,6 +6,7 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Branch
 import Branch.Shortcut as BranchShortcut
 import Browser
+import Dashboard
 import Debug
 import Device
 import Device.Shortcut as DeviceShortcut
@@ -46,6 +47,63 @@ port loadBranches : (E.Value -> msg) -> Sub msg
 port loadDevices : (E.Value -> msg) -> Sub msg
 
 
+pullBranches : D.Value -> Dashboard.Model
+pullBranches value =
+    handleBranchResult <|
+        D.decodeValue decodeBranches value
+
+
+handleBranchResult : Result D.Error Branches -> Dashboard.Model
+handleBranchResult result =
+    case result of
+        Ok branches ->
+            Dashboard.Branches branches
+
+        Err _ ->
+            Dashboard.Error
+
+
+pullDevices : D.Value -> Maybe Devices
+pullDevices value =
+    handleDeviceResult <|
+        D.decodeValue decodeDevices value
+
+
+handleDeviceResult : Result D.Error Devices -> Maybe Devices
+handleDeviceResult result =
+    case result of
+        Ok value ->
+            Just value
+
+        Err message ->
+            let
+                log =
+                    Debug.log "ERRORS: " message
+            in
+            Nothing
+
+
+pushBranches : Dashboard.Model -> Cmd Msg
+pushBranches dashboard =
+    case dashboard of
+        Dashboard.Branches branches ->
+            saveBranches <| encodeBranches branches
+
+        _ ->
+            -- TODO handle possible errors
+            Cmd.none
+
+
+pushDevices : Maybe Devices -> Cmd Msg
+pushDevices devices =
+    case devices of
+        Just value ->
+            saveDevices <| encodeDevices value
+
+        Nothing ->
+            Cmd.none
+
+
 
 -- MODEL
 
@@ -57,19 +115,10 @@ type alias Document msg =
 
 
 type alias Model =
-    { dashboard : Data
-    , devices : Data
+    { dashboard : Dashboard.Model
+    , devices : Maybe Devices
     , editor : Editor.Model
     }
-
-
-type Data
-    = LoadedBranches Branches
-    | LoadedDevices Devices
-    | FirstBranch Branches
-    | FirstDevice Devices
-    | Loading
-    | Error
 
 
 type alias Branches =
@@ -86,14 +135,6 @@ type alias Devices =
 
 type alias Device =
     Device.Device
-
-
-type alias BranchShortcut =
-    BranchShortcut.Shortcut
-
-
-type alias DeviceShortcut =
-    DeviceShortcut.Shortcut
 
 
 type alias Flags =
@@ -118,42 +159,6 @@ subscriptions model =
 -- FLAG
 
 
-pullBranches : D.Value -> Data
-pullBranches value =
-    handleBranchResult <|
-        D.decodeValue decodeBranches value
-
-
-handleBranchResult : Result D.Error Branches -> Data
-handleBranchResult result =
-    case result of
-        Ok branches ->
-            LoadedBranches branches
-
-        Err _ ->
-            Error
-
-
-pullDevices : D.Value -> Data
-pullDevices value =
-    handleDeviceResult <|
-        D.decodeValue decodeDevices value
-
-
-handleDeviceResult : Result D.Error Devices -> Data
-handleDeviceResult result =
-    case result of
-        Ok value ->
-            LoadedDevices value
-
-        Err message ->
-            let
-                log =
-                    Debug.log "ERRORS: " message
-            in
-            Error
-
-
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( Model
@@ -165,7 +170,7 @@ init flags =
 
 
 
--- UPDATE
+-- REQUEST
 
 
 requestDeviceGeneration : Branch -> Cmd Msg
@@ -191,54 +196,22 @@ requestBranchGeneration =
         RandomString.string 6 RandomChar.armenian
 
 
+
+-- UPDATE
+
+
 type Msg
     = GenerateDevice ( String, Branch )
     | GenerateBranch String
-    | NewDevice Branch
-    | NewBranch
     | PullDevices E.Value
     | PullBranches E.Value
-    | OpenDevice DeviceShortcut.Identifier
-    | OpenBranch Branch.Identifier
     | EditorMsg Editor.Msg
-
-
-pushBranches : Data -> Cmd Msg
-pushBranches dashboard =
-    case dashboard of
-        LoadedBranches branches ->
-            saveBranches <| encodeBranches branches
-
-        FirstBranch branches ->
-            saveBranches <| encodeBranches branches
-
-        _ ->
-            -- TODO handle possible errors
-            Cmd.none
-
-
-pushDevices : Data -> Cmd Msg
-pushDevices devices =
-    case devices of
-        LoadedDevices value ->
-            saveDevices <| encodeDevices value
-
-        FirstDevice value ->
-            saveDevices <| encodeDevices value
-
-        _ ->
-            Cmd.none
+    | DashboardMsg Dashboard.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NewDevice branch ->
-            ( model, requestDeviceGeneration branch )
-
-        NewBranch ->
-            ( model, requestBranchGeneration )
-
         GenerateDevice ( salt, branch ) ->
             ( handleDeviceGeneration salt branch model
             , Cmd.batch
@@ -272,70 +245,96 @@ update msg model =
             , Cmd.none
             )
 
-        OpenDevice deviceId ->
+        EditorMsg editorMsg ->
+            case editorMsg of
+                Editor.NewDevice container ->
+                    ( model, requestDeviceGeneration container )
+
+                _ ->
+                    let
+                        ( editor, command ) =
+                            Editor.update editorMsg model.editor
+                    in
+                    ( { model | editor = editor }
+                    , Cmd.map EditorMsg command
+                    )
+
+        DashboardMsg dashboardMsg ->
+            case dashboardMsg of
+                Dashboard.NewBranch ->
+                    ( model, requestBranchGeneration )
+
+                Dashboard.GetBranch id ->
+                    ( { model
+                        | editor = openBranch id model.dashboard
+                      }
+                    , Cmd.none
+                    )
+
+                Dashboard.GetDevice id ->
+                    ( { model
+                        | editor = openDevice id model.devices
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    let
+                        ( dashboard, command ) =
+                            Dashboard.update
+                                dashboardMsg
+                                model.dashboard
+                    in
+                    ( { model | dashboard = dashboard }
+                    , Cmd.map DashboardMsg command
+                    )
+
+
+openBranch : Branch.Identifier -> Dashboard.Model -> Editor.Model
+openBranch id dashboard =
+    let
+        branch =
+            case dashboard of
+                Dashboard.Branches branches ->
+                    Dict.get id branches
+
+                Dashboard.Empty ->
+                    Nothing
+
+                Dashboard.Error ->
+                    Nothing
+    in
+    case branch of
+        Just value ->
+            Editor.Branch value
+
+        Nothing ->
+            Editor.NotFound
+
+
+openDevice : Device.Identifier -> Maybe Devices -> Editor.Model
+openDevice id devices =
+    let
+        device =
+            case devices of
+                Just value ->
+                    Dict.get id value
+
+                Nothing ->
+                    Nothing
+    in
+    case device of
+        Just value ->
             let
-                device =
-                    case model.devices of
-                        LoadedDevices values ->
-                            Dict.get deviceId values
-
-                        FirstDevice values ->
-                            Dict.get deviceId values
-
-                        _ ->
-                            -- TODO handle possible cases
-                            Nothing
-
-                editor =
-                    case device of
-                        Just value ->
-                            let
-                                deviceInEditor =
-                                    { device = value
-                                    , tabState = Tab.initialState
-                                    }
-                            in
-                            Editor.Device deviceInEditor
-
-                        Nothing ->
-                            Editor.NotFound
+                deviceInEditor =
+                    { device = value
+                    , tabState = Tab.initialState
+                    }
             in
-            ( { model | editor = editor }
-            , Cmd.none
-            )
+            Editor.Device deviceInEditor
 
-        OpenBranch branchId ->
-            let
-                branch =
-                    case model.dashboard of
-                        LoadedBranches branches ->
-                            Dict.get branchId branches
-
-                        FirstBranch branches ->
-                            Dict.get branchId branches
-
-                        -- TODO handle possible states
-                        _ ->
-                            Nothing
-
-                editor =
-                    case branch of
-                        Just value ->
-                            Editor.Branch value
-
-                        Nothing ->
-                            Editor.NotFound
-            in
-            ( { model | editor = editor }
-            , Cmd.none
-            )
-
-        EditorMsg editorMessage ->
-            let
-                ( editor, command ) =
-                    Editor.update editorMessage model.editor
-            in
-            ( { model | editor = editor }, Cmd.map EditorMsg command )
+        Nothing ->
+            Editor.NotFound
 
 
 
@@ -368,41 +367,27 @@ handleDeviceGeneration salt branch model =
 
         updatedBranches =
             case model.dashboard of
-                LoadedBranches branches ->
-                    LoadedBranches <|
-                        Dict.insert
-                            updatedBranch.id
-                            updatedBranch
-                            branches
-
-                FirstBranch branches ->
-                    LoadedBranches <|
+                Dashboard.Branches branches ->
+                    Dashboard.Branches <|
                         Dict.insert
                             updatedBranch.id
                             updatedBranch
                             branches
 
                 _ ->
-                    FirstBranch <|
+                    Dashboard.Branches <|
                         Dict.singleton
                             updatedBranch.id
                             updatedBranch
 
         updatedDevices =
             case model.devices of
-                LoadedDevices value ->
-                    LoadedDevices <|
+                Just value ->
+                    Just <|
                         Dict.insert device.id device value
 
-                FirstDevice value ->
-                    LoadedDevices <|
-                        Dict.insert
-                            device.id
-                            device
-                            value
-
-                _ ->
-                    FirstDevice <|
+                Nothing ->
+                    Just <|
                         Dict.singleton device.id device
 
         deviceInEditor =
@@ -417,29 +402,22 @@ handleDeviceGeneration salt branch model =
     }
 
 
-handleBranchGeneration : String -> Data -> Data
+handleBranchGeneration : String -> Dashboard.Model -> Dashboard.Model
 handleBranchGeneration salt dashboard =
     let
         branch =
             Branch.newBranch "եղո" salt
     in
     case dashboard of
-        LoadedBranches value ->
-            LoadedBranches <|
-                Dict.insert
-                    branch.id
-                    branch
-                    value
-
-        FirstBranch value ->
-            LoadedBranches <|
+        Dashboard.Branches value ->
+            Dashboard.Branches <|
                 Dict.insert
                     branch.id
                     branch
                     value
 
         _ ->
-            FirstBranch <|
+            Dashboard.Branches <|
                 Dict.singleton
                     branch.id
                     branch
@@ -495,61 +473,9 @@ view : Model -> Document Msg
 view model =
     { title = "Դատարկ մարդ"
     , body =
-        [ viewDashboard model.dashboard
-        , Html.map EditorMsg <| Editor.view model.editor
+        [ Html.map DashboardMsg <|
+            Dashboard.view model.dashboard
+        , Html.map EditorMsg <|
+            Editor.view model.editor
         ]
     }
-
-
-viewDashboard : Data -> Html Msg
-viewDashboard dashboard =
-    div []
-        [ viewBranchesInDashboard dashboard
-        , Button.button
-            [ Button.dark
-            , Button.attrs
-                [ Spacing.ml1, onClick NewBranch ]
-            ]
-            [ text "Create Branch" ]
-        ]
-
-
-viewDeviceShortcutWithMessage : DeviceShortcut -> Html Msg
-viewDeviceShortcutWithMessage shortcut =
-    DeviceShortcut.view (OpenDevice shortcut.id) shortcut
-
-
-viewBranchInDashboardCmd : Branch -> Html Msg
-viewBranchInDashboardCmd branch =
-    Branch.viewInDashboard
-        (OpenBranch branch.id)
-        branch
-        (ul [] <|
-            List.map viewDeviceShortcutWithMessage <|
-                Dict.values branch.shortcuts
-        )
-
-
-viewBranchesInDashboard : Data -> Html Msg
-viewBranchesInDashboard dashboard =
-    case dashboard of
-        LoadedBranches branches ->
-            ul [ class "tree" ] <|
-                List.map
-                    viewBranchInDashboardCmd
-                    (Dict.values branches)
-
-        FirstBranch branches ->
-            ul [ class "tree" ] <|
-                List.map
-                    viewBranchInDashboardCmd
-                    (Dict.values branches)
-
-        Loading ->
-            text "Please wait.."
-
-        Error ->
-            text "Error Loading branches"
-
-        _ ->
-            text "I don't know how to view this"
