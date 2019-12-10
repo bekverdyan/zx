@@ -47,26 +47,26 @@ port loadBranches : (E.Value -> msg) -> Sub msg
 port loadDevices : (E.Value -> msg) -> Sub msg
 
 
-pullBranches : D.Value -> Dashboard.Model
-pullBranches value =
+pullBranches : D.Value -> Maybe Branches
+pullBranches decoded =
     handleBranchResult <|
-        D.decodeValue decodeBranches value
+        D.decodeValue decodeBranches decoded
 
 
-handleBranchResult : Result D.Error Branches -> Dashboard.Model
+handleBranchResult : Result D.Error Branches -> Maybe Branches
 handleBranchResult result =
     case result of
         Ok branches ->
-            Dashboard.Branches branches
+            Just branches
 
         Err _ ->
-            Dashboard.Error
+            Nothing
 
 
 pullDevices : D.Value -> Maybe Devices
-pullDevices value =
+pullDevices decoded =
     handleDeviceResult <|
-        D.decodeValue decodeDevices value
+        D.decodeValue decodeDevices decoded
 
 
 handleDeviceResult : Result D.Error Devices -> Maybe Devices
@@ -83,14 +83,13 @@ handleDeviceResult result =
             Nothing
 
 
-pushBranches : Dashboard.Model -> Cmd Msg
+pushBranches : Maybe Branches -> Cmd Msg
 pushBranches dashboard =
     case dashboard of
-        Dashboard.Branches branches ->
+        Just branches ->
             saveBranches <| encodeBranches branches
 
-        _ ->
-            -- TODO handle possible errors
+        Nothing ->
             Cmd.none
 
 
@@ -115,8 +114,9 @@ type alias Document msg =
 
 
 type alias Model =
-    { dashboard : Dashboard.Model
+    { branches : Maybe Branches
     , devices : Maybe Devices
+    , dashboard : Dashboard.Model
     , editor : Editor.Model
     }
 
@@ -164,6 +164,7 @@ init flags =
     ( Model
         (pullBranches flags.branches)
         (pullDevices flags.devices)
+        Dashboard.Empty
         Editor.NotSelected
     , Cmd.none
     )
@@ -220,19 +221,20 @@ update msg model =
             ( addDevice device container model
             , Cmd.batch
                 [ pushDevices model.devices
-                , pushBranches model.dashboard
+                , pushBranches model.branches
                 ]
             )
 
         GenerateBranch salt ->
             let
-                dashboard =
-                    handleBranchGeneration salt model.dashboard
+                branches =
+                    handleBranchGeneration salt model.branches
             in
             ( { model
-                | dashboard = dashboard
+                | branches = Just branches
+                , dashboard = Dashboard.Branches branches
               }
-            , pushBranches dashboard
+            , pushBranches <| Just branches
             )
 
         PullDevices encoded ->
@@ -243,8 +245,21 @@ update msg model =
             )
 
         PullBranches encoded ->
+            let
+                branches =
+                    pullBranches encoded
+
+                dashboard =
+                    case branches of
+                        Just value ->
+                            Dashboard.Branches value
+
+                        Nothing ->
+                            Dashboard.Empty
+            in
             ( { model
-                | dashboard = pullBranches encoded
+                | branches = branches
+                , dashboard = dashboard
               }
             , Cmd.none
             )
@@ -272,7 +287,7 @@ update msg model =
 
                 Dashboard.SelectBranch id ->
                     ( { model
-                        | editor = openBranch id model.dashboard
+                        | editor = openBranch id model.branches
                       }
                     , Cmd.none
                     )
@@ -296,18 +311,15 @@ update msg model =
                     )
 
 
-openBranch : Branch.Identifier -> Dashboard.Model -> Editor.Model
-openBranch id dashboard =
+openBranch : Branch.Identifier -> Maybe Branches -> Editor.Model
+openBranch id branches =
     let
         branch =
-            case dashboard of
-                Dashboard.Branches branches ->
-                    Dict.get id branches
+            case branches of
+                Just value ->
+                    Dict.get id value
 
-                Dashboard.Empty ->
-                    Nothing
-
-                Dashboard.Error ->
+                Nothing ->
                     Nothing
     in
     case branch of
@@ -378,19 +390,17 @@ addDevice : Device -> Branch -> Model -> Model
 addDevice device branch model =
     let
         updatedBranches =
-            case model.dashboard of
-                Dashboard.Branches branches ->
-                    Dashboard.Branches <|
-                        Dict.insert
-                            branch.id
-                            branch
-                            branches
+            case model.branches of
+                Just branches ->
+                    Dict.insert
+                        branch.id
+                        branch
+                        branches
 
-                _ ->
-                    Dashboard.Branches <|
-                        Dict.singleton
-                            branch.id
-                            branch
+                Nothing ->
+                    Dict.singleton
+                        branch.id
+                        branch
 
         updatedDevices =
             case model.devices of
@@ -409,30 +419,29 @@ addDevice device branch model =
     in
     { model
         | devices = updatedDevices
-        , dashboard = updatedBranches
+        , branches = Just updatedBranches
         , editor = Editor.Device deviceInEditor
+        , dashboard = Dashboard.Branches updatedBranches
     }
 
 
-handleBranchGeneration : String -> Dashboard.Model -> Dashboard.Model
+handleBranchGeneration : String -> Maybe Branches -> Branches
 handleBranchGeneration salt dashboard =
     let
         branch =
             Branch.newBranch "եղո" salt
     in
     case dashboard of
-        Dashboard.Branches value ->
-            Dashboard.Branches <|
-                Dict.insert
-                    branch.id
-                    branch
-                    value
+        Just value ->
+            Dict.insert
+                branch.id
+                branch
+                value
 
-        _ ->
-            Dashboard.Branches <|
-                Dict.singleton
-                    branch.id
-                    branch
+        Nothing ->
+            Dict.singleton
+                branch.id
+                branch
 
 
 
