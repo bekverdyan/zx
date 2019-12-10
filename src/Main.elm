@@ -213,7 +213,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GenerateDevice ( salt, branch ) ->
-            ( handleDeviceGeneration salt branch model
+            let
+                ( device, container ) =
+                    generateDevice salt branch
+            in
+            ( addDevice device container model
             , Cmd.batch
                 [ pushDevices model.devices
                 , pushBranches model.dashboard
@@ -341,50 +345,53 @@ openDevice id devices =
 -- HANDLER
 
 
-handleDeviceGeneration : String -> Branch -> Model -> Model
-handleDeviceGeneration salt branch model =
+generateDevice : String -> Branch -> ( Device, Branch )
+generateDevice salt branch =
     let
-        branchShortcut =
-            Branch.createShortcut branch
-
         device =
             Device.newDevice
                 Device.Exchange
                 salt
-                branchShortcut
+            <|
+                Branch.createShortcut branch
 
-        deviceShortcut =
+        shortcut =
             Device.createShortcut device
-
-        updatedShortcuts =
+    in
+    ( device
+    , { branch
+        | shortcuts =
             Dict.insert
-                deviceShortcut.id
-                deviceShortcut
+                shortcut.id
+                shortcut
                 branch.shortcuts
+      }
+    )
 
-        updatedBranch =
-            { branch | shortcuts = updatedShortcuts }
 
+addDevice : Device -> Branch -> Model -> Model
+addDevice device branch model =
+    let
         updatedBranches =
             case model.dashboard of
                 Dashboard.Branches branches ->
                     Dashboard.Branches <|
                         Dict.insert
-                            updatedBranch.id
-                            updatedBranch
+                            branch.id
+                            branch
                             branches
 
                 _ ->
                     Dashboard.Branches <|
                         Dict.singleton
-                            updatedBranch.id
-                            updatedBranch
+                            branch.id
+                            branch
 
         updatedDevices =
             case model.devices of
-                Just value ->
+                Just devices ->
                     Just <|
-                        Dict.insert device.id device value
+                        Dict.insert device.id device devices
 
                 Nothing ->
                     Just <|
