@@ -10,7 +10,7 @@ import Html.Events exposing (..)
 
 type Model
     = NotSelected
-    | Branch Branch
+    | Branch Branch.Model
     | Device Device.ViewModel
     | NotFound
 
@@ -31,6 +31,7 @@ type alias Device =
 
 type Msg
     = DeviceMsg Device.Msg
+    | BranchMsg Branch.Msg
     | OpenDevice Device.ViewModel
     | OpenBranch Branch
     | NewDevice Branch
@@ -39,15 +40,15 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        DeviceMsg deviceMsg ->
+        DeviceMsg cmd ->
             case model of
                 Device device ->
                     let
                         updated =
-                            Device.update deviceMsg device
+                            Device.update cmd device
                     in
                     ( Device <| Tuple.first updated
-                    , Cmd.map DeviceMsg <| Tuple.second updated
+                    , Cmd.none
                     )
 
                 _ ->
@@ -58,13 +59,29 @@ update msg model =
                     ( model, Cmd.none )
 
         OpenBranch branch ->
-            ( Branch branch, Cmd.none )
+            ( Branch { branch = branch, mode = Branch.Normal }, Cmd.none )
 
         OpenDevice device ->
             ( Device device, Cmd.none )
 
         NewDevice branch ->
             ( model, Cmd.none )
+
+        BranchMsg cmd ->
+            case model of
+                Branch branch ->
+                    let
+                        updated =
+                            Branch.update cmd branch
+                    in
+                    ( Branch <| Tuple.first updated, Cmd.none )
+
+                _ ->
+                    let
+                        gag =
+                            Debug.log "Operation not permited" "!"
+                    in
+                    ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -77,12 +94,8 @@ view model =
             h1 [] [ text "Not found" ]
 
         Branch branch ->
-            let
-                viewBranch : Branch -> Html Msg
-                viewBranch data =
-                    Branch.view (NewDevice data) data
-            in
-            viewBranch branch
+            Html.map BranchMsg <|
+                Branch.view branch
 
         Device viewModel ->
             Html.map DeviceMsg <| Device.view viewModel

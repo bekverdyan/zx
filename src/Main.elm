@@ -251,6 +251,8 @@ update msg model =
 
         EditorMsg editorMsg ->
             case editorMsg of
+                -- FIXME Newly generated device is not saved because incorrect
+                -- message handling
                 Editor.NewDevice container ->
                     ( model, requestDeviceGeneration container )
 
@@ -310,7 +312,10 @@ openBranch id dashboard =
     in
     case branch of
         Just value ->
-            Editor.Branch value
+            Editor.Branch
+                { branch = value
+                , mode = Branch.Normal
+                }
 
         Nothing ->
             Editor.NotFound
