@@ -35,8 +35,8 @@ type alias DeviceShortcut =
 
 type Msg
     = LoadBranches Branches
-    | GetBranch Branch.Identifier
-    | GetDevice DeviceShortcut.Identifier
+    | SelectBranch Branch.Identifier
+    | SelectDevice DeviceShortcut.Identifier
     | NewBranch
 
 
@@ -94,7 +94,7 @@ viewBranches branches =
 viewBranchWithCmd : Branch -> Html Msg
 viewBranchWithCmd branch =
     Branch.viewInDashboard
-        (GetBranch branch.id)
+        (SelectBranch branch.id)
         branch
         (ul [] <|
             List.map viewDeviceShortcutWithCmd <|
@@ -104,4 +104,4 @@ viewBranchWithCmd branch =
 
 viewDeviceShortcutWithCmd : DeviceShortcut -> Html Msg
 viewDeviceShortcutWithCmd shortcut =
-    DeviceShortcut.view (GetDevice shortcut.id) shortcut
+    DeviceShortcut.view (SelectDevice shortcut.id) shortcut

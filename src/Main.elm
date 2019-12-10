@@ -264,14 +264,14 @@ update msg model =
                 Dashboard.NewBranch ->
                     ( model, requestBranchGeneration )
 
-                Dashboard.GetBranch id ->
+                Dashboard.SelectBranch id ->
                     ( { model
                         | editor = openBranch id model.dashboard
                       }
                     , Cmd.none
                     )
 
-                Dashboard.GetDevice id ->
+                Dashboard.SelectDevice id ->
                     ( { model
                         | editor = openDevice id model.devices
                       }
