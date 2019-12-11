@@ -179,12 +179,10 @@ requestDeviceGeneration branch =
     let
         constant =
             Random.constant branch
-    in
-    let
+
         salt =
             RandomString.string 6 RandomChar.armenian
-    in
-    let
+
         random =
             Random.pair salt constant
     in
