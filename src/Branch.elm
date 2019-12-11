@@ -145,7 +145,6 @@ type Msg
     | SetName String
     | NormalMode
     | NewDevice Branch
-    | NewName String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -178,17 +177,6 @@ update msg model =
 
         NewDevice branch ->
             ( model, Cmd.none )
-
-        NewName name ->
-            let
-                branch =
-                    model.branch
-            in
-            ( { model
-                | branch = { branch | name = name }
-              }
-            , Cmd.none
-            )
 
 
 
