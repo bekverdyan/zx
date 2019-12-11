@@ -1,4 +1,4 @@
-module Dashboard exposing (Model(..), Msg(..), update, view)
+module Dashboard exposing (Model(..), Msg(..), view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Utilities.Spacing as Spacing
@@ -37,13 +37,6 @@ type Msg
     = NewBranch
     | SelectBranch Branch.Identifier
     | SelectDevice DeviceShortcut.Identifier
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        _ ->
-            ( model, Cmd.none )
 
 
 
