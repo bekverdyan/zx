@@ -147,15 +147,11 @@ type Msg
     | NewDevice Branch
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Bool )
 update msg model =
     case msg of
         NameEditMode ->
-            let
-                gag =
-                    Debug.log "yaxq" model.mode
-            in
-            ( { model | mode = NameEdit }, Cmd.none )
+            ( { model | mode = NameEdit }, False )
 
         SetName name ->
             let
@@ -169,14 +165,14 @@ update msg model =
                     }
                 , mode = Normal
               }
-            , Cmd.none
+            , True
             )
 
         NormalMode ->
-            ( { model | mode = Normal }, Cmd.none )
+            ( { model | mode = Normal }, False )
 
         NewDevice branch ->
-            ( model, Cmd.none )
+            ( model, False )
 
 
 

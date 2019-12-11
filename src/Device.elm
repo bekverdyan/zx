@@ -207,11 +207,11 @@ type Msg
     = DeviceTabMsg Tab.State
 
 
-update : Msg -> ViewModel -> ( ViewModel, Cmd Msg )
+update : Msg -> ViewModel -> ( ViewModel, Bool )
 update msg viewModel =
     case msg of
         DeviceTabMsg state ->
-            ( { viewModel | tabState = state }, Cmd.none )
+            ( { viewModel | tabState = state }, False )
 
 
 

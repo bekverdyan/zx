@@ -271,15 +271,29 @@ update msg model =
 
                         _ ->
                             let
-                                ( editorModel, editorCmd, saveMe ) =
+                                ( editorModel, saveMe ) =
                                     Editor.update editorMsg model.editor
+
+                                save =
+                                    if saveMe == True then
+                                        saveStuff editorModel model
+
+                                    else
+                                        Cmd.none
                             in
-                            ( { model | editor = editorModel }, Cmd.none )
+                            ( { model | editor = editorModel }, save )
 
                 _ ->
                     let
-                        ( editorModel, editorCmd, saveMe ) =
+                        ( editorModel, saveMe ) =
                             Editor.update editorMsg model.editor
+
+                        save =
+                            if saveMe == True then
+                                saveStuff editorModel model
+
+                            else
+                                Cmd.none
                     in
                     ( { model | editor = editorModel }, Cmd.none )
 
@@ -327,6 +341,47 @@ update msg model =
                                     Editor.NotFound
                     in
                     ( { model | editor = editor }, Cmd.none )
+
+
+saveStuff : Editor.Model -> Model -> Cmd Msg
+saveStuff stuff model =
+    case stuff of
+        Editor.Branch viewModel ->
+            case model.branches of
+                Just branches ->
+                    pushBranches <|
+                        Just <|
+                            Dict.insert
+                                viewModel.branch.id
+                                viewModel.branch
+                                branches
+
+                Nothing ->
+                    pushBranches <|
+                        Just <|
+                            Dict.singleton
+                                viewModel.branch.id
+                                viewModel.branch
+
+        Editor.Device viewModel ->
+            case model.devices of
+                Just devices ->
+                    pushDevices <|
+                        Just <|
+                            Dict.insert
+                                viewModel.device.id
+                                viewModel.device
+                                devices
+
+                Nothing ->
+                    pushDevices <|
+                        Just <|
+                            Dict.singleton
+                                viewModel.device.id
+                                viewModel.device
+
+        _ ->
+            Cmd.none
 
 
 openBranch : Branch.Identifier -> Maybe Branches -> Editor.Model

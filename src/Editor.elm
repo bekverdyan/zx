@@ -34,42 +34,40 @@ type Msg
     | BranchMsg Branch.Msg
 
 
-update : Msg -> Model -> ( Model, Cmd Msg, Bool )
+update : Msg -> Model -> ( Model, Bool )
 update msg model =
     case msg of
         BranchMsg branchMsg ->
             case model of
                 Branch branch ->
-                    ( Branch <|
-                        Tuple.first <|
+                    let
+                        ( updated, saveMe ) =
                             Branch.update branchMsg branch
-                    , Cmd.none
-                    , False
-                    )
+                    in
+                    ( Branch updated, saveMe )
 
                 _ ->
                     let
                         gag =
                             Debug.log "This case should not happen basically" "!"
                     in
-                    ( NotSelected, Cmd.none, False )
+                    ( NotSelected, False )
 
         DeviceMsg deviceMsg ->
             case model of
                 Device device ->
-                    ( Device <|
-                        Tuple.first <|
+                    let
+                        ( updated, saveMe ) =
                             Device.update deviceMsg device
-                    , Cmd.none
-                    , False
-                    )
+                    in
+                    ( Device updated, saveMe )
 
                 _ ->
                     let
                         gag =
                             Debug.log "This case should not happen basically" "!"
                     in
-                    ( NotSelected, Cmd.none, False )
+                    ( NotSelected, False )
 
 
 view : Model -> Html Msg
