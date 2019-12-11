@@ -37,14 +37,12 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg, Bool )
 update msg model =
     case msg of
-        DeviceMsg deviceMsg ->
+        BranchMsg branchMsg ->
             case model of
-                Device device ->
-                    let
-                        updated =
-                            Device.update deviceMsg device
-                    in
-                    ( Device <| Tuple.first updated
+                Branch branch ->
+                    ( Branch <|
+                        Tuple.first <|
+                            Branch.update branchMsg branch
                     , Cmd.none
                     , False
                     )
@@ -52,25 +50,26 @@ update msg model =
                 _ ->
                     let
                         gag =
-                            Debug.log "Operation not permited" "!"
+                            Debug.log "This case should not happen basically" "!"
                     in
-                    ( model, Cmd.none, False )
+                    ( NotSelected, Cmd.none, False )
 
-        BranchMsg branchMsg ->
+        DeviceMsg deviceMsg ->
             case model of
-                Branch branch ->
-                    let
-                        updated =
-                            Branch.update branchMsg branch
-                    in
-                    ( Branch <| Tuple.first updated, Cmd.none, False )
+                Device device ->
+                    ( Device <|
+                        Tuple.first <|
+                            Device.update deviceMsg device
+                    , Cmd.none
+                    , False
+                    )
 
                 _ ->
                     let
                         gag =
-                            Debug.log "Operation not permited" "!"
+                            Debug.log "This case should not happen basically" "!"
                     in
-                    ( model, Cmd.none, False )
+                    ( NotSelected, Cmd.none, False )
 
 
 view : Model -> Html Msg

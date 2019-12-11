@@ -271,39 +271,17 @@ update msg model =
 
                         _ ->
                             let
-                                editor =
-                                    case model.editor of
-                                        Editor.Branch branch ->
-                                            Editor.Branch <|
-                                                Tuple.first <|
-                                                    Branch.update branchMsg branch
-
-                                        _ ->
-                                            let
-                                                gag =
-                                                    Debug.log "This case should not happen basicly" "!"
-                                            in
-                                            Editor.NotSelected
+                                ( editorModel, editorCmd, saveMe ) =
+                                    Editor.update editorMsg model.editor
                             in
-                            ( { model | editor = editor }, Cmd.none )
+                            ( { model | editor = editorModel }, Cmd.none )
 
-                Editor.DeviceMsg deviceMsg ->
+                _ ->
                     let
-                        editor =
-                            case model.editor of
-                                Editor.Device device ->
-                                    Editor.Device <|
-                                        Tuple.first <|
-                                            Device.update deviceMsg device
-
-                                _ ->
-                                    let
-                                        gag =
-                                            Debug.log "This case should not happen basicly" "!"
-                                    in
-                                    Editor.NotSelected
+                        ( editorModel, editorCmd, saveMe ) =
+                            Editor.update editorMsg model.editor
                     in
-                    ( { model | editor = editor }, Cmd.none )
+                    ( { model | editor = editorModel }, Cmd.none )
 
         DashboardMsg dashboardMsg ->
             case dashboardMsg of
