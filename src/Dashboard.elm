@@ -34,23 +34,15 @@ type alias DeviceShortcut =
 
 
 type Msg
-    = LoadBranches Branches
+    = NewBranch
     | SelectBranch Branch.Identifier
     | SelectDevice DeviceShortcut.Identifier
-    | NewBranch
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        LoadBranches branches ->
-            ( Branches branches, Cmd.none )
-
         _ ->
-            let
-                gag =
-                    Debug.log "Operation not permited" "!"
-            in
             ( model, Cmd.none )
 
 
