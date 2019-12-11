@@ -264,19 +264,46 @@ update msg model =
 
         EditorMsg editorMsg ->
             case editorMsg of
-                -- FIXME Newly generated device is not saved because incorrect
-                -- message handling
-                Editor.NewDevice container ->
-                    ( model, requestDeviceGeneration container )
+                Editor.BranchMsg branchMsg ->
+                    case branchMsg of
+                        Branch.NewDevice container ->
+                            ( model, requestDeviceGeneration container )
 
-                _ ->
+                        _ ->
+                            let
+                                editor =
+                                    case model.editor of
+                                        Editor.Branch branch ->
+                                            Editor.Branch <|
+                                                Tuple.first <|
+                                                    Branch.update branchMsg branch
+
+                                        _ ->
+                                            let
+                                                gag =
+                                                    Debug.log "This case should not happen basicly" "!"
+                                            in
+                                            Editor.NotSelected
+                            in
+                            ( { model | editor = editor }, Cmd.none )
+
+                Editor.DeviceMsg deviceMsg ->
                     let
-                        ( editor, command ) =
-                            Editor.update editorMsg model.editor
+                        editor =
+                            case model.editor of
+                                Editor.Device device ->
+                                    Editor.Device <|
+                                        Tuple.first <|
+                                            Device.update deviceMsg device
+
+                                _ ->
+                                    let
+                                        gag =
+                                            Debug.log "This case should not happen basicly" "!"
+                                    in
+                                    Editor.NotSelected
                     in
-                    ( { model | editor = editor }
-                    , Cmd.map EditorMsg command
-                    )
+                    ( { model | editor = editor }, Cmd.none )
 
         DashboardMsg dashboardMsg ->
             case dashboardMsg of
@@ -284,29 +311,49 @@ update msg model =
                     ( model, requestBranchGeneration )
 
                 Dashboard.SelectBranch id ->
-                    ( { model
-                        | editor = openBranch id model.branches
-                      }
-                    , Cmd.none
-                    )
+                    let
+                        editor =
+                            case model.branches of
+                                Just branches ->
+                                    case Dict.get id branches of
+                                        Just branch ->
+                                            Editor.Branch
+                                                { branch = branch
+                                                , mode = Branch.Normal
+                                                }
+
+                                        Nothing ->
+                                            Editor.NotFound
+
+                                Nothing ->
+                                    Editor.NotFound
+                    in
+                    ( { model | editor = editor }, Cmd.none )
 
                 Dashboard.SelectDevice id ->
-                    ( { model
-                        | editor = openDevice id model.devices
-                      }
-                    , Cmd.none
-                    )
-
-                _ ->
                     let
-                        ( dashboard, command ) =
-                            Dashboard.update
-                                dashboardMsg
-                                model.dashboard
+                        editor =
+                            case model.devices of
+                                Just devices ->
+                                    case Dict.get id devices of
+                                        Just device ->
+                                            Editor.Device
+                                                { device = device
+                                                , tabState = Tab.initialState
+                                                }
+
+                                        Nothing ->
+                                            Editor.NotFound
+
+                                Nothing ->
+                                    Editor.NotFound
                     in
-                    ( { model | dashboard = dashboard }
-                    , Cmd.map DashboardMsg command
-                    )
+                    ( { model | editor = editor }, Cmd.none )
+
+
+handleBranchMsg : Branch.Msg -> Model -> ( Model, Cmd Msg )
+handleBranchMsg msg model =
+    ( model, Cmd.none )
 
 
 openBranch : Branch.Identifier -> Maybe Branches -> Editor.Model
