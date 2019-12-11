@@ -32,23 +32,21 @@ type alias Device =
 type Msg
     = DeviceMsg Device.Msg
     | BranchMsg Branch.Msg
-    | OpenDevice Device.ViewModel
-    | OpenBranch Branch
-    | NewDevice Branch
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Cmd Msg, Bool )
 update msg model =
     case msg of
-        DeviceMsg cmd ->
+        DeviceMsg deviceMsg ->
             case model of
                 Device device ->
                     let
                         updated =
-                            Device.update cmd device
+                            Device.update deviceMsg device
                     in
                     ( Device <| Tuple.first updated
                     , Cmd.none
+                    , False
                     )
 
                 _ ->
@@ -56,32 +54,23 @@ update msg model =
                         gag =
                             Debug.log "Operation not permited" "!"
                     in
-                    ( model, Cmd.none )
+                    ( model, Cmd.none, False )
 
-        OpenBranch branch ->
-            ( Branch { branch = branch, mode = Branch.Normal }, Cmd.none )
-
-        OpenDevice device ->
-            ( Device device, Cmd.none )
-
-        NewDevice branch ->
-            ( model, Cmd.none )
-
-        BranchMsg cmd ->
+        BranchMsg branchMsg ->
             case model of
                 Branch branch ->
                     let
                         updated =
-                            Branch.update cmd branch
+                            Branch.update branchMsg branch
                     in
-                    ( Branch <| Tuple.first updated, Cmd.none )
+                    ( Branch <| Tuple.first updated, Cmd.none, False )
 
                 _ ->
                     let
                         gag =
                             Debug.log "Operation not permited" "!"
                     in
-                    ( model, Cmd.none )
+                    ( model, Cmd.none, False )
 
 
 view : Model -> Html Msg
@@ -98,4 +87,5 @@ view model =
                 Branch.view branch
 
         Device viewModel ->
-            Html.map DeviceMsg <| Device.view viewModel
+            Html.map DeviceMsg <|
+                Device.view viewModel
