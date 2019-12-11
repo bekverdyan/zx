@@ -329,11 +329,6 @@ update msg model =
                     ( { model | editor = editor }, Cmd.none )
 
 
-handleBranchMsg : Branch.Msg -> Model -> ( Model, Cmd Msg )
-handleBranchMsg msg model =
-    ( model, Cmd.none )
-
-
 openBranch : Branch.Identifier -> Maybe Branches -> Editor.Model
 openBranch id branches =
     let
