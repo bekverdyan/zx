@@ -26,7 +26,7 @@ type alias Model =
 
 type Mode
     = Normal
-    | NameEdit
+    | NameEdit String
 
 
 type alias Branch =
@@ -145,13 +145,18 @@ type Msg
     | SetName String
     | NormalMode
     | NewDevice Branch
+    | NameInput String
 
 
 update : Msg -> Model -> ( Model, Bool )
 update msg model =
     case msg of
         NameEditMode ->
-            ( { model | mode = NameEdit }, False )
+            ( { model
+                | mode = NameEdit model.branch.name
+              }
+            , False
+            )
 
         SetName name ->
             let
@@ -174,6 +179,9 @@ update msg model =
         NewDevice branch ->
             ( model, False )
 
+        NameInput value ->
+            ( { model | mode = NameEdit value }, False )
+
 
 
 -- VIEW
@@ -189,8 +197,8 @@ view model =
                     Normal ->
                         viewNormalModeName model
 
-                    NameEdit ->
-                        viewEditModeName model
+                    NameEdit value ->
+                        viewNameEditMode value
                 ]
             , Block.text [] [ text "" ]
             , Block.custom <|
@@ -224,33 +232,30 @@ viewNormalModeName model =
         ]
 
 
-viewEditModeName : Model -> Html Msg
-viewEditModeName model =
+viewNameEditMode : String -> Html Msg
+viewNameEditMode value =
     div []
         [ Alert.simpleWarning []
             [ InputGroup.config
                 (InputGroup.text
-                    [ Input.attrs [ value model.branch.name ]
-                    , Input.placeholder "Branch name"
+                    [ Input.id "nameInput"
+                    , Input.onInput NameInput
+                    , Input.value value
                     ]
                 )
+                |> InputGroup.successors
+                    [ InputGroup.button
+                        [ Button.success
+                        , Button.onClick <| SetName value
+                        ]
+                        [ text "Save" ]
+                    , InputGroup.button
+                        [ Button.warning
+                        , Button.onClick NormalMode
+                        ]
+                        [ text "Cancel" ]
+                    ]
                 |> InputGroup.view
-            , Button.button
-                [ Button.success
-                , Button.attrs
-                    [ Spacing.ml1
-                    , onClick <| SetName model.branch.name
-                    ]
-                ]
-                [ text "Save" ]
-            , Button.button
-                [ Button.warning
-                , Button.attrs
-                    [ Spacing.ml1
-                    , onClick NormalMode
-                    ]
-                ]
-                [ text "Cancel" ]
             ]
         ]
 
