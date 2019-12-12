@@ -1,4 +1,4 @@
-module Branch.Shortcut exposing (Shortcut, decoder, encode)
+module Branch.Shortcut exposing (Identifier, Shortcut, decoder, encode)
 
 import Json.Decode as D
 import Json.Encode as E
