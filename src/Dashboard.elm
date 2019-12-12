@@ -1,4 +1,4 @@
-module Dashboard exposing (Model(..), Msg(..), update, view)
+module Dashboard exposing (Model(..), Msg(..), view)
 
 import Bootstrap.Button as Button
 import Bootstrap.Utilities.Spacing as Spacing
@@ -34,24 +34,9 @@ type alias DeviceShortcut =
 
 
 type Msg
-    = LoadBranches Branches
-    | GetBranch Branch.Identifier
-    | GetDevice DeviceShortcut.Identifier
-    | NewBranch
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        LoadBranches branches ->
-            ( Branches branches, Cmd.none )
-
-        _ ->
-            let
-                gag =
-                    Debug.log "Operation not permited" "!"
-            in
-            ( model, Cmd.none )
+    = NewBranch
+    | SelectBranch Branch.Identifier
+    | SelectDevice DeviceShortcut.Identifier
 
 
 
@@ -94,7 +79,7 @@ viewBranches branches =
 viewBranchWithCmd : Branch -> Html Msg
 viewBranchWithCmd branch =
     Branch.viewInDashboard
-        (GetBranch branch.id)
+        (SelectBranch branch.id)
         branch
         (ul [] <|
             List.map viewDeviceShortcutWithCmd <|
@@ -104,4 +89,4 @@ viewBranchWithCmd branch =
 
 viewDeviceShortcutWithCmd : DeviceShortcut -> Html Msg
 viewDeviceShortcutWithCmd shortcut =
-    DeviceShortcut.view (GetDevice shortcut.id) shortcut
+    DeviceShortcut.view (SelectDevice shortcut.id) shortcut

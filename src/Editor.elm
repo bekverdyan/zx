@@ -10,7 +10,7 @@ import Html.Events exposing (..)
 
 type Model
     = NotSelected
-    | Branch Branch
+    | Branch Branch.Model
     | Device Device.ViewModel
     | NotFound
 
@@ -31,40 +31,43 @@ type alias Device =
 
 type Msg
     = DeviceMsg Device.Msg
-    | OpenDevice Device.ViewModel
-    | OpenBranch Branch
-    | NewDevice Branch
+    | BranchMsg Branch.Msg
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> ( Model, Bool )
 update msg model =
     case msg of
-        DeviceMsg deviceMsg ->
+        BranchMsg branchMsg ->
             case model of
-                Device device ->
+                Branch branch ->
                     let
-                        updated =
-                            Device.update deviceMsg device
+                        ( updated, saveMe ) =
+                            Branch.update branchMsg branch
                     in
-                    ( Device <| Tuple.first updated
-                    , Cmd.map DeviceMsg <| Tuple.second updated
-                    )
+                    ( Branch updated, saveMe )
 
                 _ ->
                     let
                         gag =
-                            Debug.log "Operation not permited" "!"
+                            Debug.log "This case should not happen basically" "!"
                     in
-                    ( model, Cmd.none )
+                    ( NotSelected, False )
 
-        OpenBranch branch ->
-            ( Branch branch, Cmd.none )
+        DeviceMsg deviceMsg ->
+            case model of
+                Device device ->
+                    let
+                        ( updated, saveMe ) =
+                            Device.update deviceMsg device
+                    in
+                    ( Device updated, saveMe )
 
-        OpenDevice device ->
-            ( Device device, Cmd.none )
-
-        NewDevice branch ->
-            ( model, Cmd.none )
+                _ ->
+                    let
+                        gag =
+                            Debug.log "This case should not happen basically" "!"
+                    in
+                    ( NotSelected, False )
 
 
 view : Model -> Html Msg
@@ -77,12 +80,9 @@ view model =
             h1 [] [ text "Not found" ]
 
         Branch branch ->
-            let
-                viewBranch : Branch -> Html Msg
-                viewBranch data =
-                    Branch.view (NewDevice data) data
-            in
-            viewBranch branch
+            Html.map BranchMsg <|
+                Branch.view branch
 
         Device viewModel ->
-            Html.map DeviceMsg <| Device.view viewModel
+            Html.map DeviceMsg <|
+                Device.view viewModel

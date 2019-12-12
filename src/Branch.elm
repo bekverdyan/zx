@@ -1,6 +1,12 @@
-module Branch exposing (Branch, Identifier, createShortcut, decoder, encode, idToString, newBranch, view, viewInDashboard)
+module Branch exposing (Branch, Identifier, Mode(..), Model, Msg(..), createShortcut, decoder, encode, idToString, newBranch, update, view, viewInDashboard)
 
+import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
+import Bootstrap.Card as Card
+import Bootstrap.Card.Block as Block
+import Bootstrap.Form.Input as Input
+import Bootstrap.Form.InputGroup as InputGroup
+import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
@@ -10,6 +16,17 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
+
+
+type alias Model =
+    { branch : Branch
+    , mode : Mode
+    }
+
+
+type Mode
+    = Normal
+    | NameEdit String
 
 
 type alias Branch =
@@ -121,18 +138,125 @@ removeShortcut id shortcuts =
 
 
 -- UPDATE
+
+
+type Msg
+    = NameEditMode
+    | SetName String
+    | NormalMode
+    | NewDevice Branch
+    | NameInput String
+
+
+update : Msg -> Model -> ( Model, Bool )
+update msg model =
+    case msg of
+        NameEditMode ->
+            ( { model
+                | mode = NameEdit model.branch.name
+              }
+            , False
+            )
+
+        SetName name ->
+            let
+                branch =
+                    model.branch
+            in
+            ( { model
+                | branch =
+                    { branch
+                        | name = name
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        NormalMode ->
+            ( { model | mode = Normal }, False )
+
+        NewDevice branch ->
+            ( model, False )
+
+        NameInput value ->
+            ( { model | mode = NameEdit value }, False )
+
+
+
 -- VIEW
 
 
-view : msg -> Branch -> Html msg
-view newDeviceCmd branch =
-    div []
-        [ text branch.id
-        , Button.button
-            [ Button.primary
-            , Button.attrs [ onClick newDeviceCmd ]
+view : Model -> Html Msg
+view model =
+    Card.config []
+        |> Card.headerH3 [] [ text model.branch.id ]
+        |> Card.block []
+            [ Block.titleH3 []
+                [ case model.mode of
+                    Normal ->
+                        viewNormalModeName model
+
+                    NameEdit value ->
+                        viewNameEditMode value
+                ]
+            , Block.text [] [ text "" ]
+            , Block.custom <|
+                Button.button
+                    [ Button.primary
+                    , Button.attrs
+                        [ onClick <|
+                            NewDevice model.branch
+                        ]
+                    ]
+                    [ text "New Device" ]
             ]
-            [ text "Generate new Device" ]
+        |> Card.footer [] [ text "" ]
+        |> Card.view
+
+
+viewNormalModeName : Model -> Html Msg
+viewNormalModeName model =
+    div []
+        [ Alert.simpleSecondary []
+            [ text model.branch.name
+            , Button.button
+                [ Button.dark
+                , Button.attrs
+                    [ Spacing.ml1
+                    , onClick NameEditMode
+                    ]
+                ]
+                [ text "Edit" ]
+            ]
+        ]
+
+
+viewNameEditMode : String -> Html Msg
+viewNameEditMode value =
+    div []
+        [ Alert.simpleWarning []
+            [ InputGroup.config
+                (InputGroup.text
+                    [ Input.id "nameInput"
+                    , Input.onInput NameInput
+                    , Input.value value
+                    ]
+                )
+                |> InputGroup.successors
+                    [ InputGroup.button
+                        [ Button.success
+                        , Button.onClick <| SetName value
+                        ]
+                        [ text "Save" ]
+                    , InputGroup.button
+                        [ Button.warning
+                        , Button.onClick NormalMode
+                        ]
+                        [ text "Cancel" ]
+                    ]
+                |> InputGroup.view
+            ]
         ]
 
 

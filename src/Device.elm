@@ -207,11 +207,11 @@ type Msg
     = DeviceTabMsg Tab.State
 
 
-update : Msg -> ViewModel -> ( ViewModel, Cmd Msg )
+update : Msg -> ViewModel -> ( ViewModel, Bool )
 update msg viewModel =
     case msg of
         DeviceTabMsg state ->
-            ( { viewModel | tabState = state }, Cmd.none )
+            ( { viewModel | tabState = state }, False )
 
 
 
@@ -271,7 +271,7 @@ viewTabs counters settings state =
                 , link = Tab.link [] [ text "Counters" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Exo" ]
+                        [ h4 [] [ text "Gago" ]
                         , p [] [ Counter.view counters ]
                         ]
                 }
