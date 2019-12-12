@@ -271,7 +271,7 @@ viewTabs counters settings state =
                 , link = Tab.link [] [ text "Counters" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Exo" ]
+                        [ h4 [] [ text "Gago" ]
                         , p [] [ Counter.view counters ]
                         ]
                 }

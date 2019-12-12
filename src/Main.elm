@@ -47,38 +47,40 @@ port loadBranches : (E.Value -> msg) -> Sub msg
 port loadDevices : (E.Value -> msg) -> Sub msg
 
 
-pullBranches : D.Value -> Maybe Branches
-pullBranches decoded =
-    handleBranchResult <|
-        D.decodeValue decodeBranches decoded
-
-
-handleBranchResult : Result D.Error Branches -> Maybe Branches
-handleBranchResult result =
-    case result of
+decodeBranches : D.Value -> ( Maybe Branches, Dashboard.Model )
+decodeBranches encoded =
+    let
+        decoder : D.Decoder Branches
+        decoder =
+            D.dict Branch.decoder
+    in
+    case D.decodeValue decoder encoded of
         Ok branches ->
-            Just branches
+            ( Just branches, Dashboard.Branches branches )
 
         Err _ ->
-            Nothing
+            let
+                log =
+                    Debug.log "There is no branches in LocalStorage" ""
+            in
+            ( Nothing, Dashboard.Empty )
 
 
-pullDevices : D.Value -> Maybe Devices
-pullDevices decoded =
-    handleDeviceResult <|
-        D.decodeValue decodeDevices decoded
-
-
-handleDeviceResult : Result D.Error Devices -> Maybe Devices
-handleDeviceResult result =
-    case result of
+decodeDevices : D.Value -> Maybe Devices
+decodeDevices encoded =
+    let
+        deviceDecoder : D.Decoder Devices
+        deviceDecoder =
+            D.dict Device.decoder
+    in
+    case D.decodeValue deviceDecoder encoded of
         Ok value ->
             Just value
 
         Err message ->
             let
                 log =
-                    Debug.log "ERRORS: " message
+                    Debug.log "There is no Devices in LocalStorage" ""
             in
             Nothing
 
@@ -137,13 +139,11 @@ type alias Device =
     Device.Device
 
 
-type alias Flags =
-    { branches : D.Value
-    , devices : D.Value
-    }
 
-
-
+-- type alias Flags =
+--     { branches : D.Value
+--     , devices : D.Value
+--     }
 -- SUBSCRIBE
 
 
@@ -159,11 +159,11 @@ subscriptions model =
 -- FLAG
 
 
-init : Flags -> ( Model, Cmd Msg )
-init flags =
+init : () -> ( Model, Cmd Msg )
+init _ =
     ( Model
-        (pullBranches flags.branches)
-        (pullDevices flags.devices)
+        Nothing
+        Nothing
         Dashboard.Empty
         Editor.NotSelected
     , Cmd.none
@@ -215,11 +215,14 @@ update msg model =
             let
                 ( device, container ) =
                     generateDevice salt branch
+
+                newModel =
+                    addDevice device container model
             in
-            ( addDevice device container model
+            ( newModel
             , Cmd.batch
-                [ pushDevices model.devices
-                , pushBranches model.branches
+                [ pushDevices newModel.devices
+                , pushBranches newModel.branches
                 ]
             )
 
@@ -237,23 +240,15 @@ update msg model =
 
         PullDevices encoded ->
             ( { model
-                | devices = pullDevices encoded
+                | devices = decodeDevices encoded
               }
             , Cmd.none
             )
 
         PullBranches encoded ->
             let
-                branches =
-                    pullBranches encoded
-
-                dashboard =
-                    case branches of
-                        Just value ->
-                            Dashboard.Branches value
-
-                        Nothing ->
-                            Dashboard.Empty
+                ( branches, dashboard ) =
+                    decodeBranches encoded
             in
             ( { model
                 | branches = branches
@@ -274,28 +269,28 @@ update msg model =
                                 ( editorModel, saveMe ) =
                                     Editor.update editorMsg model.editor
 
-                                save =
+                                ( newModel, cmdMsg ) =
                                     if saveMe == True then
                                         saveStuff editorModel model
 
                                     else
-                                        Cmd.none
+                                        ( model, Cmd.none )
                             in
-                            ( { model | editor = editorModel }, save )
+                            ( { newModel | editor = editorModel }, cmdMsg )
 
                 _ ->
                     let
                         ( editorModel, saveMe ) =
                             Editor.update editorMsg model.editor
 
-                        save =
+                        ( newModel, cmdMsg ) =
                             if saveMe == True then
                                 saveStuff editorModel model
 
                             else
-                                Cmd.none
+                                ( model, Cmd.none )
                     in
-                    ( { model | editor = editorModel }, Cmd.none )
+                    ( { newModel | editor = editorModel }, Cmd.none )
 
         DashboardMsg dashboardMsg ->
             case dashboardMsg of
@@ -343,45 +338,67 @@ update msg model =
                     ( { model | editor = editor }, Cmd.none )
 
 
-saveStuff : Editor.Model -> Model -> Cmd Msg
+saveStuff : Editor.Model -> Model -> ( Model, Cmd Msg )
 saveStuff stuff model =
     case stuff of
         Editor.Branch viewModel ->
             case model.branches of
                 Just branches ->
-                    pushBranches <|
-                        Just <|
+                    let
+                        updated =
                             Dict.insert
                                 viewModel.branch.id
                                 viewModel.branch
                                 branches
+                    in
+                    ( { model
+                        | branches = Just updated
+                        , dashboard = Dashboard.Branches updated
+                      }
+                    , pushBranches <| Just updated
+                    )
 
                 Nothing ->
-                    pushBranches <|
-                        Just <|
+                    let
+                        new =
                             Dict.singleton
                                 viewModel.branch.id
                                 viewModel.branch
+                    in
+                    ( { model
+                        | branches = Just new
+                        , dashboard = Dashboard.Branches new
+                      }
+                    , pushBranches <| Just new
+                    )
 
         Editor.Device viewModel ->
             case model.devices of
                 Just devices ->
-                    pushDevices <|
-                        Just <|
+                    let
+                        updated =
                             Dict.insert
                                 viewModel.device.id
                                 viewModel.device
                                 devices
+                    in
+                    ( { model | devices = Just updated }
+                    , pushDevices <| Just updated
+                    )
 
                 Nothing ->
-                    pushDevices <|
-                        Just <|
+                    let
+                        new =
                             Dict.singleton
                                 viewModel.device.id
                                 viewModel.device
+                    in
+                    ( { model | devices = Just new }
+                    , pushDevices <| Just new
+                    )
 
         _ ->
-            Cmd.none
+            ( model, Cmd.none )
 
 
 openBranch : Branch.Identifier -> Maybe Branches -> Editor.Model
@@ -478,12 +495,10 @@ addDevice device branch model =
         updatedDevices =
             case model.devices of
                 Just devices ->
-                    Just <|
-                        Dict.insert device.id device devices
+                    Dict.insert device.id device devices
 
                 Nothing ->
-                    Just <|
-                        Dict.singleton device.id device
+                    Dict.singleton device.id device
 
         deviceInEditor =
             { device = device
@@ -491,7 +506,7 @@ addDevice device branch model =
             }
     in
     { model
-        | devices = updatedDevices
+        | devices = Just updatedDevices
         , branches = Just updatedBranches
         , editor = Editor.Device deviceInEditor
         , dashboard = Dashboard.Branches updatedBranches
@@ -529,20 +544,6 @@ encodeBranches branches =
 encodeDevices : Devices -> E.Value
 encodeDevices devices =
     E.dict Device.idToString Device.encode devices
-
-
-
--- DECODER
-
-
-decodeBranches : D.Decoder Branches
-decodeBranches =
-    D.dict Branch.decoder
-
-
-decodeDevices : D.Decoder Devices
-decodeDevices =
-    D.dict Device.decoder
 
 
 
