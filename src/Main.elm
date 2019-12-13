@@ -292,7 +292,7 @@ update msg model =
                             else
                                 ( model, Cmd.none )
                     in
-                    ( { newModel | editor = editorModel }, Cmd.none )
+                    ( { newModel | editor = editorModel }, cmdMsg )
 
         DashboardMsg dashboardMsg ->
             case dashboardMsg of
@@ -326,10 +326,9 @@ update msg model =
                                 Just devices ->
                                     case Dict.get id devices of
                                         Just device ->
-                                            Editor.Device
-                                                { device = device
-                                                , tabState = Tab.initialState
-                                                }
+                                            Editor.Device <|
+                                                Device.init
+                                                    device
 
                                         Nothing ->
                                             Editor.NotFound
@@ -358,19 +357,50 @@ updateBranchRefs branch value =
         updateShortcuts : String -> Device -> Device
         updateShortcuts id device =
             mapDevices id device shortcut
+    in
+    case value of
+        Just devices ->
+            Just <|
+                Dict.map
+                    updateShortcuts
+                    devices
 
-        updatedDevices =
-            case value of
-                Just devices ->
+        Nothing ->
+            Nothing
+
+
+updateDeviceRef : Device -> Maybe Branches -> Maybe Branches
+updateDeviceRef device values =
+    let
+        shortcut =
+            Device.createShortcut device
+    in
+    case values of
+        Just branches ->
+            case
+                Dict.get
+                    device.branch.id
+                    branches
+            of
+                Just branch ->
+                    let
+                        updated =
+                            { branch
+                                | shortcuts =
+                                    Dict.insert
+                                        shortcut.id
+                                        shortcut
+                                        branch.shortcuts
+                            }
+                    in
                     Just <|
-                        Dict.map
-                            updateShortcuts
-                            devices
+                        Dict.insert updated.id updated branches
 
                 Nothing ->
                     Nothing
-    in
-    updatedDevices
+
+        Nothing ->
+            Nothing
 
 
 saveStuff : Editor.Model -> Model -> ( Model, Cmd Msg )
@@ -387,7 +417,9 @@ saveStuff stuff model =
                                 branches
 
                         devices =
-                            updateBranchRefs viewModel.branch model.devices
+                            updateBranchRefs
+                                viewModel.branch
+                                model.devices
                     in
                     ( { model
                         | branches = Just updated
@@ -418,25 +450,67 @@ saveStuff stuff model =
             case model.devices of
                 Just devices ->
                     let
-                        updated =
-                            Dict.insert
-                                viewModel.device.id
+                        updatedDevices =
+                            Just <|
+                                Dict.insert
+                                    viewModel.device.id
+                                    viewModel.device
+                                    devices
+
+                        updatedBranches =
+                            updateDeviceRef
                                 viewModel.device
-                                devices
+                                model.branches
+
+                        dashboard =
+                            case updatedBranches of
+                                Just values ->
+                                    Dashboard.Branches values
+
+                                Nothing ->
+                                    Dashboard.Empty
                     in
-                    ( { model | devices = Just updated }
-                    , pushDevices <| Just updated
+                    ( { model
+                        | devices = updatedDevices
+                        , branches = updatedBranches
+                        , dashboard = dashboard
+                      }
+                    , Cmd.batch
+                        [ pushDevices <| updatedDevices
+                        , pushBranches <| updatedBranches
+                        ]
                     )
 
                 Nothing ->
                     let
                         new =
-                            Dict.singleton
-                                viewModel.device.id
+                            Just <|
+                                Dict.singleton
+                                    viewModel.device.id
+                                    viewModel.device
+
+                        updatedBranches =
+                            updateDeviceRef
                                 viewModel.device
+                                model.branches
+
+                        dashboard =
+                            case updatedBranches of
+                                Just values ->
+                                    Dashboard.Branches values
+
+                                Nothing ->
+                                    Dashboard.Empty
                     in
-                    ( { model | devices = Just new }
-                    , pushDevices <| Just new
+                    ( { model
+                        | devices = new
+                        , branches = updatedBranches
+                        , dashboard = dashboard
+                      }
+                    , Cmd.batch
+                        [ pushDevices <| new
+                        , pushBranches <| updatedBranches
+                        ]
                     )
 
         _ ->
@@ -478,13 +552,7 @@ openDevice id devices =
     in
     case device of
         Just value ->
-            let
-                deviceInEditor =
-                    { device = value
-                    , tabState = Tab.initialState
-                    }
-            in
-            Editor.Device deviceInEditor
+            Editor.Device <| Device.init value
 
         Nothing ->
             Editor.NotFound
@@ -541,16 +609,11 @@ addDevice device branch model =
 
                 Nothing ->
                     Dict.singleton device.id device
-
-        deviceInEditor =
-            { device = device
-            , tabState = Tab.initialState
-            }
     in
     { model
         | devices = Just updatedDevices
         , branches = Just updatedBranches
-        , editor = Editor.Device deviceInEditor
+        , editor = Editor.Device <| Device.init device
         , dashboard = Dashboard.Branches updatedBranches
     }
 
