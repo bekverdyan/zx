@@ -557,7 +557,7 @@ handleBranchGeneration : String -> Maybe Branches -> Branches
 handleBranchGeneration salt dashboard =
     let
         branch =
-            Branch.newBranch "եղո" salt
+            Branch.newBranch salt
     in
     case dashboard of
         Just value ->
