@@ -2,10 +2,13 @@ module Branch exposing (Branch, Identifier, Mode(..), Model, Msg(..), createShor
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
@@ -197,15 +200,15 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Card.config []
-        |> Card.headerH3 [] [ text model.branch.id ]
+        |> Card.headerH3 [] [ text model.branch.name ]
         |> Card.block []
             [ Block.titleH3 []
                 [ case model.mode of
                     Normal ->
-                        viewNormalModeName model
+                        viewNormalModeName model.branch.name
 
-                    NameEdit value ->
-                        viewNameEditMode value
+                    NameEdit editable ->
+                        viewNameEditMode editable
                 ]
             , Block.text [] [ text "" ]
             , Block.custom <|
@@ -222,11 +225,11 @@ view model =
         |> Card.view
 
 
-viewNormalModeName : Model -> Html Msg
-viewNormalModeName model =
+viewNormalModeName : String -> Html Msg
+viewNormalModeName name =
     div []
         [ Alert.simpleSecondary []
-            [ text model.branch.name
+            [ text name
             , Button.button
                 [ Button.dark
                 , Button.attrs
@@ -240,20 +243,50 @@ viewNormalModeName model =
 
 
 viewNameEditMode : String -> Html Msg
-viewNameEditMode value =
+viewNameEditMode editable =
+    div []
+        [ Grid.row []
+            [ Grid.col [ Col.lg6 ]
+                [ InputGroup.config
+                    (InputGroup.text
+                        [ Input.id "nameInput"
+                        , Input.onInput NameInput
+                        , Input.value editable
+                        ]
+                    )
+                    |> InputGroup.successors
+                        [ InputGroup.button
+                            [ Button.success
+                            , Button.onClick <| SetName editable
+                            ]
+                            [ text "Save" ]
+                        , InputGroup.button
+                            [ Button.warning
+                            , Button.onClick NormalMode
+                            ]
+                            [ text "Cancel" ]
+                        ]
+                    |> InputGroup.view
+                ]
+            ]
+        ]
+
+
+viewNameEditModeOld : String -> Html Msg
+viewNameEditModeOld editable =
     div []
         [ Alert.simpleWarning []
             [ InputGroup.config
                 (InputGroup.text
                     [ Input.id "nameInput"
                     , Input.onInput NameInput
-                    , Input.value value
+                    , Input.value editable
                     ]
                 )
                 |> InputGroup.successors
                     [ InputGroup.button
                         [ Button.success
-                        , Button.onClick <| SetName value
+                        , Button.onClick <| SetName editable
                         ]
                         [ text "Save" ]
                     , InputGroup.button
