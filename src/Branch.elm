@@ -70,9 +70,16 @@ newIdentifier salt =
     Hash.sha512_224 salt
 
 
-newBranch : String -> String -> Branch
-newBranch name salt =
-    { id = newIdentifier salt
+newBranch : String -> Branch
+newBranch salt =
+    let
+        id =
+            newIdentifier salt
+
+        name =
+            String.slice 0 7 <| idToString id
+    in
+    { id = id
     , name = name
     , shortcuts = Dict.empty
     }

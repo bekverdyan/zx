@@ -226,6 +226,7 @@ view model =
             ]
         |> Card.block []
             [ Block.titleH4 [] [ viewInfo model.device.info ]
+            , Block.titleH4 [] [ text model.device.branch.name ]
             , Block.text []
                 [ viewTabs
                     model.device.counters

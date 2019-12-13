@@ -338,6 +338,39 @@ update msg model =
                     ( { model | editor = editor }, Cmd.none )
 
 
+mapDevices : String -> Device -> BranchShortcut.Shortcut -> Device
+mapDevices deviceId device branchShortcut =
+    if device.branch.id == branchShortcut.id then
+        { device | branch = branchShortcut }
+
+    else
+        device
+
+
+updateBranchRefs : Branch -> Maybe Devices -> Maybe Devices
+updateBranchRefs branch value =
+    let
+        shortcut =
+            Branch.createShortcut branch
+
+        updateShortcuts : String -> Device -> Device
+        updateShortcuts id device =
+            mapDevices id device shortcut
+
+        updatedDevices =
+            case value of
+                Just devices ->
+                    Just <|
+                        Dict.map
+                            updateShortcuts
+                            devices
+
+                Nothing ->
+                    Nothing
+    in
+    updatedDevices
+
+
 saveStuff : Editor.Model -> Model -> ( Model, Cmd Msg )
 saveStuff stuff model =
     case stuff of
@@ -350,12 +383,19 @@ saveStuff stuff model =
                                 viewModel.branch.id
                                 viewModel.branch
                                 branches
+
+                        devices =
+                            updateBranchRefs viewModel.branch model.devices
                     in
                     ( { model
                         | branches = Just updated
+                        , devices = devices
                         , dashboard = Dashboard.Branches updated
                       }
-                    , pushBranches <| Just updated
+                    , Cmd.batch
+                        [ pushBranches <| Just updated
+                        , pushDevices devices
+                        ]
                     )
 
                 Nothing ->
@@ -517,7 +557,7 @@ handleBranchGeneration : String -> Maybe Branches -> Branches
 handleBranchGeneration salt dashboard =
     let
         branch =
-            Branch.newBranch "եղո" salt
+            Branch.newBranch salt
     in
     case dashboard of
         Just value ->
