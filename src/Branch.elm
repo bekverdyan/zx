@@ -200,16 +200,17 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Card.config []
-        |> Card.headerH3 [] [ text model.branch.name ]
+        |> Card.headerH3 []
+            [ case model.mode of
+                Normal ->
+                    viewNormalModeName model.branch.name
+
+                NameEdit editable ->
+                    viewNameEditMode editable
+            ]
         |> Card.block []
             [ Block.titleH3 []
-                [ case model.mode of
-                    Normal ->
-                        viewNormalModeName model.branch.name
-
-                    NameEdit editable ->
-                        viewNameEditMode editable
-                ]
+                [ text "Some stuff" ]
             , Block.text [] [ text "" ]
             , Block.custom <|
                 Button.button
