@@ -1,0 +1,7 @@
+.tree {
+  @import 'tree-view.css'
+}
+
+:not(.tree) {
+  @import url("https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css");
+}
