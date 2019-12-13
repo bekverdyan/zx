@@ -1,8 +1,11 @@
-module Device exposing (Device, DeviceType(..), Identifier, Msg(..), ViewModel, createShortcut, decoder, encode, idToString, newDevice, update, view)
+module Device exposing (Device, DeviceType(..), Identifier, Mode(..), Msg(..), ViewModel, createShortcut, decoder, encode, idToString, init, newDevice, update, view)
 
+import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
+import Bootstrap.Form.Input as Input
+import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Tab as Tab
 import Bootstrap.Utilities.Spacing as Spacing
@@ -22,7 +25,13 @@ import Json.Encode as E
 type alias ViewModel =
     { device : Device
     , tabState : Tab.State
+    , mode : Mode
     }
+
+
+type Mode
+    = Normal
+    | NameEdit String
 
 
 type alias BranchShortcut =
@@ -87,7 +96,7 @@ idToString id =
 
 init : Device -> ViewModel
 init device =
-    ViewModel device Tab.initialState
+    ViewModel device Tab.initialState Normal
 
 
 
@@ -203,13 +212,43 @@ decodeInfo =
 
 type Msg
     = DeviceTabMsg Tab.State
+    | NameEditMode
+    | SetName String
+    | NormalMode
+    | NameInput String
 
 
 update : Msg -> ViewModel -> ( ViewModel, Bool )
-update msg viewModel =
+update msg model =
     case msg of
         DeviceTabMsg state ->
-            ( { viewModel | tabState = state }, False )
+            ( { model | tabState = state }, False )
+
+        NormalMode ->
+            ( { model | mode = Normal }, False )
+
+        NameInput editable ->
+            ( { model | mode = NameEdit editable }, False )
+
+        SetName name ->
+            let
+                device =
+                    model.device
+            in
+            ( { model
+                | device =
+                    { device | name = name }
+                , mode = Normal
+              }
+            , True
+            )
+
+        NameEditMode ->
+            ( { model
+                | mode = NameEdit model.device.name
+              }
+            , False
+            )
 
 
 
@@ -220,7 +259,14 @@ view : ViewModel -> Html Msg
 view model =
     Card.config []
         |> Card.header [ class "text-center" ]
-            [ h3 [ Spacing.mt2 ] [ text model.device.name ]
+            [ h3 [ Spacing.mt2 ]
+                [ case model.mode of
+                    Normal ->
+                        viewNormalModeName model.device.name
+
+                    NameEdit editable ->
+                        viewNameEditMode editable
+                ]
             ]
         |> Card.block []
             [ Block.titleH4 [] [ viewInfo model.device.info ]
@@ -240,6 +286,51 @@ view model =
                     [ text "Go somewhere" ]
             ]
         |> Card.view
+
+
+viewNormalModeName : String -> Html Msg
+viewNormalModeName name =
+    div []
+        [ Alert.simpleSecondary []
+            [ text name
+            , Button.button
+                [ Button.dark
+                , Button.attrs
+                    [ Spacing.ml1
+                    , onClick NameEditMode
+                    ]
+                ]
+                [ text "Edit" ]
+            ]
+        ]
+
+
+viewNameEditMode : String -> Html Msg
+viewNameEditMode editable =
+    div []
+        [ Alert.simpleWarning []
+            [ InputGroup.config
+                (InputGroup.text
+                    [ Input.id "nameInput"
+                    , Input.onInput NameInput
+                    , Input.value editable
+                    ]
+                )
+                |> InputGroup.successors
+                    [ InputGroup.button
+                        [ Button.success
+                        , Button.onClick <| SetName editable
+                        ]
+                        [ text "Save" ]
+                    , InputGroup.button
+                        [ Button.warning
+                        , Button.onClick NormalMode
+                        ]
+                        [ text "Cancel" ]
+                    ]
+                |> InputGroup.view
+            ]
+        ]
 
 
 viewInfo : Info -> Html Msg
