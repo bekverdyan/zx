@@ -106,11 +106,6 @@ newIdentifier salt =
     Hash.sha512_224 salt
 
 
-newName : Name
-newName =
-    ""
-
-
 newModel : Model
 newModel =
     ""
@@ -129,6 +124,9 @@ newSoftVersion =
 newDevice : DeviceType -> String -> BranchShortcut.Shortcut -> Device
 newDevice deviceType salt branch =
     let
+        id =
+            newIdentifier salt
+
         settings =
             case deviceType of
                 Washbox ->
@@ -137,8 +135,8 @@ newDevice deviceType salt branch =
                 Exchange ->
                     Setting.newConfig
     in
-    { id = newIdentifier salt
-    , name = newName
+    { id = id
+    , name = String.slice 0 7 <| idToString id
     , info = infoOf newModel newVersion newSoftVersion
     , branch = branch
     , counters = Counter.newCounters []
@@ -222,11 +220,15 @@ view : ViewModel -> Html Msg
 view model =
     Card.config []
         |> Card.header [ class "text-center" ]
-            [ h3 [ Spacing.mt2 ] [ text model.device.id ]
+            [ h3 [ Spacing.mt2 ] [ text model.device.name ]
             ]
         |> Card.block []
             [ Block.titleH4 [] [ viewInfo model.device.info ]
-            , Block.titleH4 [] [ text model.device.branch.name ]
+            , Block.titleH4 []
+                [ text <|
+                    "Container: "
+                        ++ model.device.branch.name
+                ]
             , Block.text []
                 [ viewTabs
                     model.device.counters

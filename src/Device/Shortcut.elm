@@ -70,7 +70,7 @@ view : msg -> Shortcut -> Html msg
 view openDeviceCmd shortcut =
     li [ id shortcut.id ]
         [ a [ onClick openDeviceCmd ]
-            [ label [ attribute "for" shortcut.id ] [ text "shortcut.name" ]
+            [ label [ attribute "for" shortcut.id ] [ text shortcut.name ]
             , input
                 [ attribute "checked" ""
                 , attribute "id" shortcut.id
