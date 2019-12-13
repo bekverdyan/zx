@@ -245,36 +245,6 @@ viewNormalModeName name =
 viewNameEditMode : String -> Html Msg
 viewNameEditMode editable =
     div []
-        [ Grid.row []
-            [ Grid.col [ Col.lg6 ]
-                [ InputGroup.config
-                    (InputGroup.text
-                        [ Input.id "nameInput"
-                        , Input.onInput NameInput
-                        , Input.value editable
-                        ]
-                    )
-                    |> InputGroup.successors
-                        [ InputGroup.button
-                            [ Button.success
-                            , Button.onClick <| SetName editable
-                            ]
-                            [ text "Save" ]
-                        , InputGroup.button
-                            [ Button.warning
-                            , Button.onClick NormalMode
-                            ]
-                            [ text "Cancel" ]
-                        ]
-                    |> InputGroup.view
-                ]
-            ]
-        ]
-
-
-viewNameEditModeOld : String -> Html Msg
-viewNameEditModeOld editable =
-    div []
         [ Alert.simpleWarning []
             [ InputGroup.config
                 (InputGroup.text
