@@ -2,6 +2,7 @@ module Device.Config exposing (Model, Msg, decoder, encode, newConfig, update, v
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
@@ -503,6 +504,7 @@ type Msg
     | EditCoinNominalMode
     | SaveCoinNominal String
     | InputCoinNominal String
+    | SetHopper Faze
 
 
 update : Msg -> Model -> ( Model, Bool )
@@ -560,6 +562,26 @@ update msg model =
             , False
             )
 
+        SetHopper faze ->
+            let
+                switchesOrig =
+                    model.parameters.switches
+
+                switches =
+                    { switchesOrig | hopper = faze }
+
+                parametersOrig =
+                    model.parameters
+            in
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | switches = switches
+                    }
+              }
+            , True
+            )
+
 
 
 -- VIEW
@@ -571,7 +593,7 @@ view model =
         [ Grid.row []
             [ Grid.col []
                 [ viewVariables
-                    model.parameters.variables
+                    model.parameters
                     model.mode
                 ]
 
@@ -580,8 +602,8 @@ view model =
         ]
 
 
-viewVariables : Variables -> Mode -> Html Msg
-viewVariables variables mode =
+viewVariables : Parameters -> Mode -> Html Msg
+viewVariables parameters mode =
     Table.simpleTable
         ( Table.simpleThead
             []
@@ -595,19 +617,21 @@ viewVariables variables mode =
 
                         _ ->
                             viewCoinNominalNormalMode
-                                variables.coinNominal
+                                parameters.variables.coinNominal
                     ]
                 ]
             , Table.tr []
-                [ Table.td [] [ text "There" ]
-                , Table.td [] [ text "There" ]
-                , Table.td [] [ text "There" ]
+                [ Table.td []
+                    [ viewHopper
+                        parameters.switches.hopper
+                    ]
                 ]
-            , Table.tr []
-                [ Table.td [] [ text "Dude" ]
-                , Table.td [] [ text "Dude" ]
-                , Table.td [] [ text "Dude" ]
-                ]
+
+            -- , Table.tr []
+            --     [ Table.td [] [ text "Dude" ]
+            --     , Table.td [] [ text "Dude" ]
+            --     , Table.td [] [ text "Dude" ]
+            --     ]
             ]
         )
 
@@ -633,9 +657,9 @@ viewCoinNominalNormalMode coinNominal =
 viewCoinNominalEditMode : String -> Html Msg
 viewCoinNominalEditMode editable =
     div []
-        [ text "Coin nominal"
-        , Alert.simpleWarning []
-            [ InputGroup.config
+        [ Alert.simpleWarning []
+            [ text "Coin nominal"
+            , InputGroup.config
                 (InputGroup.text
                     [ Input.id "coiNominalInput"
                     , Input.onInput InputCoinNominal
@@ -656,6 +680,33 @@ viewCoinNominalEditMode editable =
                         [ text "Cancel" ]
                     ]
                 |> InputGroup.view
+            ]
+        ]
+
+
+viewHopper : Faze -> Html Msg
+viewHopper faze =
+    Alert.simpleSecondary []
+        [ text "Hopper"
+        , ButtonGroup.radioButtonGroup []
+            [ ButtonGroup.radioButton
+                (faze == Disabled)
+                [ Button.primary
+                , Button.onClick <| SetHopper Disabled
+                ]
+                [ text "Disabled" ]
+            , ButtonGroup.radioButton
+                (faze == CcTalk)
+                [ Button.primary
+                , Button.onClick <| SetHopper CcTalk
+                ]
+                [ text "CcTalk" ]
+            , ButtonGroup.radioButton
+                (faze == Pulse)
+                [ Button.primary
+                , Button.onClick <| SetHopper Pulse
+                ]
+                [ text "Pulse" ]
             ]
         ]
 
