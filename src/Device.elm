@@ -1,4 +1,4 @@
-module Device exposing (Device, DeviceType(..), Identifier, Mode(..), Msg(..), ViewModel, createShortcut, decoder, encode, idToString, init, newDevice, update, view)
+module Device exposing (Device, Identifier, Mode(..), Model, Msg(..), Type(..), createShortcut, decoder, encode, idToString, init, newDevice, update, view)
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
@@ -12,8 +12,9 @@ import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Debug
+import Device.Channel as Channel
+import Device.Config as Config
 import Device.Counter as Counter
-import Device.Setting as Setting
 import Device.Shortcut as DeviceShortcut
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -22,7 +23,7 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-type alias ViewModel =
+type alias Model =
     { device : Device
     , tabState : Tab.State
     , mode : Mode
@@ -48,7 +49,7 @@ type alias Device =
     , info : Info
     , branch : BranchShortcut
     , counters : Counter.Counters
-    , settings : Setting.Settings
+    , settings : Settings
     }
 
 
@@ -61,10 +62,10 @@ type alias Name =
 
 
 type alias Info =
-    ( Model, Version, SoftVersion )
+    ( DeviceModel, Version, SoftVersion )
 
 
-type alias Model =
+type alias DeviceModel =
     String
 
 
@@ -76,7 +77,12 @@ type alias SoftVersion =
     String
 
 
-type DeviceType
+type Settings
+    = Channels Channel.Model
+    | Configs Config.Model
+
+
+type Type
     = Washbox
     | Exchange
 
@@ -94,9 +100,17 @@ idToString id =
 -- INIT
 
 
-init : Device -> ViewModel
+init : Device -> Model
 init device =
-    ViewModel device Tab.initialState Normal
+    Model device Tab.initialState Normal
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Tab.subscriptions model.tabState
+        (SettingsMsg
+            << TabStateMsg
+        )
 
 
 
@@ -115,8 +129,8 @@ newIdentifier salt =
     Hash.sha512_224 salt
 
 
-newModel : Model
-newModel =
+newDeviceModel : DeviceModel
+newDeviceModel =
     ""
 
 
@@ -130,7 +144,7 @@ newSoftVersion =
     ""
 
 
-newDevice : DeviceType -> String -> BranchShortcut.Shortcut -> Device
+newDevice : Type -> String -> BranchShortcut.Shortcut -> Device
 newDevice deviceType salt branch =
     let
         id =
@@ -139,14 +153,14 @@ newDevice deviceType salt branch =
         settings =
             case deviceType of
                 Washbox ->
-                    Setting.newChannels 0
+                    Channels <| Channel.newChannels 0
 
                 Exchange ->
-                    Setting.newConfig
+                    Configs Config.newConfig
     in
     { id = id
     , name = String.slice 0 7 <| idToString id
-    , info = infoOf newModel newVersion newSoftVersion
+    , info = infoOf newDeviceModel newVersion newSoftVersion
     , branch = branch
     , counters = Counter.newCounters []
     , settings = settings
@@ -159,13 +173,22 @@ newDevice deviceType salt branch =
 
 encode : Device -> E.Value
 encode device =
+    let
+        settingsEncoder =
+            case device.settings of
+                Channels channels ->
+                    Channel.encode channels
+
+                Configs configs ->
+                    Config.encode configs
+    in
     E.object
         [ ( "id", E.string device.id )
         , ( "name", E.string device.name )
         , ( "info", encodeInfo device.info )
         , BranchShortcut.encode device.branch
         , ( "counters", Counter.encode device.counters )
-        , ( "settings", Setting.encode device.settings )
+        , ( "settings", settingsEncoder )
         ]
 
 
@@ -190,10 +213,27 @@ decoder =
         (D.field "info" decodeInfo)
         BranchShortcut.decoder
         (D.field "counters" Counter.decoder)
-        (D.field "settings" Setting.decoder)
+        (D.field "settings" <|
+            D.oneOf
+                [ decodeConfigs
+                , decodeChannels
+                ]
+        )
 
 
-infoOf : Model -> Version -> SoftVersion -> Info
+decodeConfigs : D.Decoder Settings
+decodeConfigs =
+    D.map Configs
+        Config.decoder
+
+
+decodeChannels : D.Decoder Settings
+decodeChannels =
+    D.map Channels
+        Channel.decoder
+
+
+infoOf : DeviceModel -> Version -> SoftVersion -> Info
 infoOf model version softVersion =
     ( model, version, softVersion )
 
@@ -211,18 +251,36 @@ decodeInfo =
 
 
 type Msg
-    = DeviceTabMsg Tab.State
-    | NameEditMode
+    = NameEditMode
     | SetName String
     | NormalMode
     | NameInput String
+    | SettingsMsg TabMsg
 
 
-update : Msg -> ViewModel -> ( ViewModel, Bool )
+type TabMsg
+    = WashBoxMsg Channel.Msg
+    | ExchangeMsg Config.Msg
+    | CountersMsg Counter.Msg
+    | TabStateMsg Tab.State
+
+
+updateSettings : TabMsg -> Model -> ( Model, Bool )
+updateSettings tabMsg model =
+    case tabMsg of
+        TabStateMsg state ->
+            ( { model | tabState = state }, False )
+
+        _ ->
+            -- TODO Implement me !!!
+            ( model, False )
+
+
+update : Msg -> Model -> ( Model, Bool )
 update msg model =
     case msg of
-        DeviceTabMsg state ->
-            ( { model | tabState = state }, False )
+        SettingsMsg panelMsg ->
+            updateSettings panelMsg model
 
         NormalMode ->
             ( { model | mode = Normal }, False )
@@ -255,14 +313,14 @@ update msg model =
 -- VIEW
 
 
-view : ViewModel -> Html Msg
+view : Model -> Html Msg
 view model =
     Card.config []
         |> Card.header [ class "text-center" ]
             [ h3 [ Spacing.mt2 ]
                 [ case model.mode of
                     Normal ->
-                        viewNormalModeName model.device.name
+                        viewNameNormalMode model.device.name
 
                     NameEdit editable ->
                         viewNameEditMode editable
@@ -276,11 +334,7 @@ view model =
                         ++ model.device.branch.name
                 ]
             , Block.text []
-                [ viewTabs
-                    model.device.counters
-                    model.device.settings
-                    model.tabState
-                ]
+                [ viewSettings model ]
             , Block.custom <|
                 Button.button [ Button.primary ]
                     [ text "Go somewhere" ]
@@ -288,8 +342,8 @@ view model =
         |> Card.view
 
 
-viewNormalModeName : String -> Html Msg
-viewNormalModeName name =
+viewNameNormalMode : String -> Html Msg
+viewNameNormalMode name =
     div []
         [ Alert.simpleSecondary []
             [ text name
@@ -351,14 +405,39 @@ viewInfo ( model, version, softVersion ) =
 -- TODO View counters and settings in Tabs
 
 
-viewTabs :
-    Counter.Counters
-    -> Setting.Settings
-    -> Tab.State
-    -> Html Msg
-viewTabs counters settings state =
+viewSettings : Model -> Html Msg
+viewSettings model =
+    let
+        settingsView =
+            case model.device.settings of
+                Channels channels ->
+                    Html.map
+                        (SettingsMsg
+                            << WashBoxMsg
+                        )
+                    <|
+                        Channel.view channels
+
+                Configs parameters ->
+                    Html.map
+                        (SettingsMsg
+                            << ExchangeMsg
+                        )
+                    <|
+                        Config.view parameters
+
+        countersView =
+            Html.map
+                (SettingsMsg
+                    << CountersMsg
+                )
+            <|
+                Counter.view model.device.counters
+    in
     Tab.config
-        DeviceTabMsg
+        (SettingsMsg
+            << TabStateMsg
+        )
         |> Tab.items
             [ Tab.item
                 { id = "counters"
@@ -366,7 +445,7 @@ viewTabs counters settings state =
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "Gago" ]
-                        , p [] [ Counter.view counters ]
+                        , p [] [ countersView ]
                         ]
                 }
             , Tab.item
@@ -375,11 +454,11 @@ viewTabs counters settings state =
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "Exo" ]
-                        , p [] [ Setting.view settings ]
+                        , p [] [ settingsView ]
                         ]
                 }
             ]
-        |> Tab.view state
+        |> Tab.view model.tabState
 
 
 

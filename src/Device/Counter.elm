@@ -1,4 +1,4 @@
-module Device.Counter exposing (Counters, decoder, encode, newCounters, view)
+module Device.Counter exposing (Counters, Msg, decoder, encode, newCounters, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -109,10 +109,18 @@ decodePointer =
 
 
 
+-- UPDATE
+
+
+type Msg
+    = DoNothing
+
+
+
 -- VIEW
 
 
-view : Counters -> Html msg
+view : Counters -> Html Msg
 view counters =
     text "counters"
 
