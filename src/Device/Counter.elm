@@ -1,4 +1,4 @@
-module Device.Counter exposing (Counters, Msg, decoder, encode, newCounters, view)
+module Device.Counter exposing (Model, Msg, decoder, encode, newCounters, update, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -7,7 +7,7 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-type alias Counters =
+type alias Model =
     List Counter
 
 
@@ -55,7 +55,7 @@ newCounter name =
     ( name, newPointer )
 
 
-newCounters : List Name -> Counters
+newCounters : List Name -> Model
 newCounters names =
     List.map newCounter names
 
@@ -64,7 +64,7 @@ newCounters names =
 --ENCODE
 
 
-encode : Counters -> E.Value
+encode : Model -> E.Value
 encode counters =
     E.list encodeCounter counters
 
@@ -89,7 +89,7 @@ encodePointer pointer =
 --DECODE
 
 
-decoder : D.Decoder Counters
+decoder : D.Decoder Model
 decoder =
     D.list decodeCounter
 
@@ -116,11 +116,16 @@ type Msg
     = DoNothing
 
 
+update : Msg -> Model -> ( Model, Bool )
+update msg model =
+    ( model, False )
+
+
 
 -- VIEW
 
 
-view : Counters -> Html Msg
+view : Model -> Html Msg
 view counters =
     text "counters"
 

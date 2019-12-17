@@ -1,4 +1,4 @@
-module Device.Config exposing (Model, Msg, decoder, encode, newConfig, view)
+module Device.Config exposing (Model, Msg, decoder, encode, newConfig, update, view)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -488,6 +488,11 @@ encode model =
 
 type Msg
     = DoNothing
+
+
+update : Msg -> Model -> ( Model, Bool )
+update msg model =
+    ( model, False )
 
 
 
