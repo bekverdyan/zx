@@ -48,7 +48,7 @@ type alias Device =
     , name : Name
     , info : Info
     , branch : BranchShortcut
-    , counters : Counter.Counters
+    , counters : Counter.Model
     , settings : Settings
     }
 
@@ -271,9 +271,74 @@ updateSettings tabMsg model =
         TabStateMsg state ->
             ( { model | tabState = state }, False )
 
-        _ ->
-            -- TODO Implement me !!!
-            ( model, False )
+        WashBoxMsg channelMsg ->
+            case model.device.settings of
+                Channels channelsOrig ->
+                    let
+                        ( channels, saveMe ) =
+                            Channel.update
+                                channelMsg
+                                channelsOrig
+
+                        deviceOrig =
+                            model.device
+
+                        device =
+                            { deviceOrig
+                                | settings = Channels channels
+                            }
+                    in
+                    ( { model | device = device }, saveMe )
+
+                _ ->
+                    let
+                        log =
+                            Debug.log
+                                "Operation not permited"
+                                " !"
+                    in
+                    ( model, False )
+
+        ExchangeMsg exchangeMsg ->
+            case model.device.settings of
+                Configs configsOrig ->
+                    let
+                        ( configs, saveMe ) =
+                            Config.update exchangeMsg configsOrig
+
+                        deviceOrig =
+                            model.device
+
+                        device =
+                            { deviceOrig
+                                | settings = Configs configs
+                            }
+                    in
+                    ( { model | device = device }, saveMe )
+
+                _ ->
+                    let
+                        log =
+                            Debug.log
+                                "Operation not permited"
+                                " !"
+                    in
+                    ( model, False )
+
+        CountersMsg countersMsg ->
+            let
+                ( counters, saveMe ) =
+                    Counter.update
+                        countersMsg
+                        model.device.counters
+
+                deviceOrig =
+                    model.device
+
+                device =
+                    { deviceOrig | counters = counters }
+            in
+            ( { model | device = device }, saveMe )
 
 
 update : Msg -> Model -> ( Model, Bool )
@@ -444,7 +509,7 @@ viewSettings model =
                 , link = Tab.link [] [ text "Counters" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Gago" ]
+                        [ h4 [] [ text "" ]
                         , p [] [ countersView ]
                         ]
                 }
@@ -453,7 +518,7 @@ viewSettings model =
                 , link = Tab.link [] [ text "Settings" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Exo" ]
+                        [ h4 [] [ text "" ]
                         , p [] [ settingsView ]
                         ]
                 }
