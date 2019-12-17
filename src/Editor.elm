@@ -11,12 +11,12 @@ import Html.Events exposing (..)
 type Model
     = NotSelected
     | Branch Branch.Model
-    | Device Device.ViewModel
+    | Device Device.Model
     | NotFound
 
 
 type alias Content =
-    { device : Device.ViewModel
+    { device : Device.Model
     , branch : Branch
     }
 

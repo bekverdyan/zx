@@ -82,7 +82,9 @@ decodeDevices encoded =
         Err message ->
             let
                 log =
-                    Debug.log "There is no Devices in LocalStorage" ""
+                    Debug.log
+                        "There is no Devices in LocalStorage"
+                        message
             in
             Nothing
 
@@ -567,7 +569,7 @@ generateDevice salt branch =
     let
         device =
             Device.newDevice
-                Device.Exchange
+                Device.Washbox
                 salt
             <|
                 Branch.createShortcut branch
