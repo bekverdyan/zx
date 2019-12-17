@@ -509,7 +509,7 @@ viewSettings model =
                 , link = Tab.link [] [ text "Counters" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Gago" ]
+                        [ h4 [] [ text "" ]
                         , p [] [ countersView ]
                         ]
                 }
@@ -518,7 +518,7 @@ viewSettings model =
                 , link = Tab.link [] [ text "Settings" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Exo" ]
+                        [ h4 [] [ text "" ]
                         , p [] [ settingsView ]
                         ]
                 }

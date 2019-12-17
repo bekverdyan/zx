@@ -1,7 +1,13 @@
 module Device.Config exposing (Model, Msg, decoder, encode, newConfig, update, view)
 
+import Bootstrap.Alert as Alert
+import Bootstrap.Button as Button
+import Bootstrap.Form.Input as Input
+import Bootstrap.Form.InputGroup as InputGroup
+import Bootstrap.Grid as Grid
+import Bootstrap.Table as Table
+import Bootstrap.Utilities.Spacing as Spacing
 import Html exposing (..)
-import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
@@ -13,7 +19,13 @@ import Json.Encode as E
 
 type alias Model =
     { parameters : Parameters
+    , mode : Mode
     }
+
+
+type Mode
+    = Normal
+    | EditCoinNominal String
 
 
 type alias Parameters =
@@ -104,7 +116,7 @@ newParameters =
 
 newConfig : Model
 newConfig =
-    { parameters = newParameters }
+    Model newParameters Normal
 
 
 
@@ -113,7 +125,7 @@ newConfig =
 
 fromParameters : Variables -> Switches -> Model
 fromParameters variables switches =
-    Model <| Parameters variables switches
+    Model (Parameters variables switches) Normal
 
 
 decoder : D.Decoder Model
@@ -487,12 +499,66 @@ encode model =
 
 
 type Msg
-    = DoNothing
+    = NormalMode
+    | EditCoinNominalMode
+    | SaveCoinNominal String
+    | InputCoinNominal String
 
 
 update : Msg -> Model -> ( Model, Bool )
 update msg model =
-    ( model, False )
+    case msg of
+        NormalMode ->
+            ( { model | mode = Normal }, False )
+
+        EditCoinNominalMode ->
+            let
+                coinNominal =
+                    model.parameters.variables.coinNominal
+            in
+            ( { model
+                | mode =
+                    EditCoinNominal <|
+                        String.fromInt coinNominal
+              }
+            , False
+            )
+
+        SaveCoinNominal nominal ->
+            let
+                parametersOrig =
+                    model.parameters
+
+                variablesOrig =
+                    parametersOrig.variables
+
+                parsed =
+                    case String.toInt nominal of
+                        Just value ->
+                            value
+
+                        Nothing ->
+                            0
+
+                variables =
+                    { variablesOrig | coinNominal = parsed }
+            in
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | variables = variables
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        InputCoinNominal nominal ->
+            ( { model
+                | mode = EditCoinNominal nominal
+              }
+            , False
+            )
 
 
 
@@ -501,7 +567,97 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    text "parameters"
+    Grid.container []
+        [ Grid.row []
+            [ Grid.col []
+                [ viewVariables
+                    model.parameters.variables
+                    model.mode
+                ]
+
+            -- , Grid.col [] [ text "2 of 2" ]
+            ]
+        ]
+
+
+viewVariables : Variables -> Mode -> Html Msg
+viewVariables variables mode =
+    Table.simpleTable
+        ( Table.simpleThead
+            []
+        , Table.tbody []
+            [ Table.tr []
+                [ Table.td []
+                    [ case mode of
+                        EditCoinNominal nominal ->
+                            viewCoinNominalEditMode
+                                nominal
+
+                        _ ->
+                            viewCoinNominalNormalMode
+                                variables.coinNominal
+                    ]
+                ]
+            , Table.tr []
+                [ Table.td [] [ text "There" ]
+                , Table.td [] [ text "There" ]
+                , Table.td [] [ text "There" ]
+                ]
+            , Table.tr []
+                [ Table.td [] [ text "Dude" ]
+                , Table.td [] [ text "Dude" ]
+                , Table.td [] [ text "Dude" ]
+                ]
+            ]
+        )
+
+
+viewCoinNominalNormalMode : Int -> Html Msg
+viewCoinNominalNormalMode coinNominal =
+    div []
+        [ Alert.simpleSecondary []
+            [ text "Coin nominal: "
+            , text <| String.fromInt coinNominal
+            , Button.button
+                [ Button.dark
+                , Button.attrs
+                    [ Spacing.ml1
+                    , onClick EditCoinNominalMode
+                    ]
+                ]
+                [ text "Edit" ]
+            ]
+        ]
+
+
+viewCoinNominalEditMode : String -> Html Msg
+viewCoinNominalEditMode editable =
+    div []
+        [ text "Coin nominal"
+        , Alert.simpleWarning []
+            [ InputGroup.config
+                (InputGroup.text
+                    [ Input.id "coiNominalInput"
+                    , Input.onInput InputCoinNominal
+                    , Input.value editable
+                    ]
+                )
+                |> InputGroup.successors
+                    [ InputGroup.button
+                        [ Button.success
+                        , Button.onClick <|
+                            SaveCoinNominal editable
+                        ]
+                        [ text "Save" ]
+                    , InputGroup.button
+                        [ Button.warning
+                        , Button.onClick NormalMode
+                        ]
+                        [ text "Cancel" ]
+                    ]
+                |> InputGroup.view
+            ]
+        ]
 
 
 
