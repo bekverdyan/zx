@@ -569,7 +569,7 @@ generateDevice salt branch =
     let
         device =
             Device.newDevice
-                Device.Washbox
+                Device.Exchange
                 salt
             <|
                 Branch.createShortcut branch
