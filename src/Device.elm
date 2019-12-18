@@ -17,6 +17,7 @@ module Device exposing
     )
 
 import Bootstrap.Alert as Alert
+import Bootstrap.Badge as Badge
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
@@ -423,15 +424,12 @@ view model =
 viewNameNormalMode : String -> Html Msg
 viewNameNormalMode name =
     div []
-        [ Alert.simpleSecondary []
-            [ Button.button
-                [ Button.roleLink
-                , Button.attrs
-                    [ Spacing.ml1
-                    , onClick NameEditMode
-                    ]
+        [ h3 []
+            [ Badge.badgeLight
+                [ Spacing.ml1
+                , onClick NameEditMode
                 ]
-                [ h4 [] [ text name ] ]
+                [ text name ]
             ]
         ]
 
