@@ -41,6 +41,9 @@ type Mode
     | EditCoinNominal String
     | EditHopperCoinNominal String
     | EditCardPrice String
+    | EditHopper Faze
+    | EditHopperMode Faze
+    | EditBillValidator Faze
 
 
 type alias Parameters =
@@ -90,6 +93,58 @@ type Faze
     | Ethernet
     | WiFi
     | NoFaze
+
+
+fazeToString : Faze -> String
+fazeToString faze =
+    case faze of
+        Enabled ->
+            "Enabled"
+
+        Disabled ->
+            "Disabled"
+
+        CcTalk ->
+            "CcTalk"
+
+        Pulse ->
+            "Pulse"
+
+        Mode_1 ->
+            "Mode_1"
+
+        Mode_2 ->
+            "Mode_2"
+
+        CRT_531 ->
+            "CRT_531"
+
+        TCD_820M ->
+            "TCD_820M"
+
+        ToGate ->
+            "ToGate"
+
+        FullOut ->
+            "FullOut"
+
+        None ->
+            "None"
+
+        RS_485 ->
+            "RS_485"
+
+        Can ->
+            "Can"
+
+        Ethernet ->
+            "Ethernet"
+
+        WiFi ->
+            "WiFi"
+
+        NoFaze ->
+            "NoFaze"
 
 
 
@@ -525,7 +580,10 @@ type Msg
     | SaveCardPrice String
     | InputCardPrice String
     | SetHopper Faze
+    | EditModeHopper
     | SetHopperMode Faze
+    | EditModeHopperMode
+    | EditModeBillValidator
     | SetBillValidator Faze
 
 
@@ -682,6 +740,13 @@ update msg model =
             , False
             )
 
+        EditModeHopper ->
+            let
+                faze =
+                    model.parameters.switches.hopper
+            in
+            ( { model | mode = EditHopper faze }, False )
+
         SetHopper faze ->
             let
                 switchesOrig =
@@ -698,9 +763,17 @@ update msg model =
                     { parametersOrig
                         | switches = switches
                     }
+                , mode = Normal
               }
             , True
             )
+
+        EditModeHopperMode ->
+            let
+                faze =
+                    model.parameters.switches.hopperMode
+            in
+            ( { model | mode = EditHopperMode faze }, False )
 
         SetHopperMode faze ->
             let
@@ -718,9 +791,17 @@ update msg model =
                     { parametersOrig
                         | switches = switches
                     }
+                , mode = Normal
               }
             , True
             )
+
+        EditModeBillValidator ->
+            let
+                faze =
+                    model.parameters.switches.billValidator
+            in
+            ( { model | mode = EditBillValidator faze }, False )
 
         SetBillValidator faze ->
             let
@@ -738,6 +819,7 @@ update msg model =
                     { parametersOrig
                         | switches = switches
                     }
+                , mode = Normal
               }
             , True
             )
@@ -778,10 +860,13 @@ view model =
                     |> Card.listGroup
                         [ viewHopper
                             switches.hopper
+                            model.mode
                         , viewHopperMode
                             switches.hopperMode
+                            model.mode
                         , viewBillValidator
                             switches.billValidator
+                            model.mode
                         ]
                     |> Card.view
                 ]
@@ -810,9 +895,11 @@ viewCoinNominalNormalMode nominal =
                 , onClick EditCoinNominalMode
                 ]
             ]
-            [ text <|
-                "Coin nominal: "
-                    ++ String.fromInt nominal
+            [ h4 []
+                [ text <|
+                    "Coin nominal: "
+                        ++ String.fromInt nominal
+                ]
             ]
         ]
 
@@ -867,9 +954,11 @@ viewHopperCoinNominalNormalMode nominal =
                 , onClick EditHopperCoinNominalMode
                 ]
             ]
-            [ text <|
-                "Hopper coin nominal: "
-                    ++ String.fromInt nominal
+            [ h4 []
+                [ text <|
+                    "Hopper coin nominal: "
+                        ++ String.fromInt nominal
+                ]
             ]
         ]
 
@@ -924,9 +1013,11 @@ viewCardPriceNormalMode price =
                 , onClick EditCardPriceMode
                 ]
             ]
-            [ text <|
-                "Card price: "
-                    ++ String.fromInt price
+            [ h4 []
+                [ text <|
+                    "Card price: "
+                        ++ String.fromInt price
+                ]
             ]
         ]
 
@@ -960,17 +1051,40 @@ viewCardPriceEditMode editable =
         ]
 
 
-viewHopper : Faze -> ListGroup.Item Msg
-viewHopper faze =
+viewHopper : Faze -> Mode -> ListGroup.Item Msg
+viewHopper faze mode =
+    case mode of
+        EditHopper editable ->
+            viewHopperEditMode editable
+
+        _ ->
+            viewHopperNormalMode faze
+
+
+viewHopperNormalMode : Faze -> ListGroup.Item Msg
+viewHopperNormalMode faze =
     ListGroup.li [ ListGroup.info ]
-        [ text "Hopper: "
-        , ButtonGroup.radioButtonGroup []
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeHopper
+                ]
+            ]
+            [ h4 [] [ text <| "Hopper: " ++ fazeToString faze ] ]
+        ]
+
+
+viewHopperEditMode : Faze -> ListGroup.Item Msg
+viewHopperEditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
             [ ButtonGroup.radioButton
                 (faze == Disabled)
                 [ Button.primary
                 , Button.onClick <| SetHopper Disabled
                 ]
-                [ text "Disabled" ]
+                [ text "Disable" ]
             , ButtonGroup.radioButton
                 (faze == CcTalk)
                 [ Button.primary
@@ -987,11 +1101,39 @@ viewHopper faze =
         ]
 
 
-viewHopperMode : Faze -> ListGroup.Item Msg
-viewHopperMode faze =
+viewHopperMode : Faze -> Mode -> ListGroup.Item Msg
+viewHopperMode faze mode =
+    case mode of
+        EditHopperMode editable ->
+            viewHopperModeEditMode editable
+
+        _ ->
+            viewHopperModeNormalMode faze
+
+
+viewHopperModeNormalMode : Faze -> ListGroup.Item Msg
+viewHopperModeNormalMode faze =
     ListGroup.li [ ListGroup.info ]
-        [ text "Hopper mode: "
-        , ButtonGroup.radioButtonGroup []
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeHopperMode
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "Hopper mode: "
+                        ++ fazeToString faze
+                ]
+            ]
+        ]
+
+
+viewHopperModeEditMode : Faze -> ListGroup.Item Msg
+viewHopperModeEditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
             [ ButtonGroup.radioButton
                 (faze == Mode_1)
                 [ Button.primary
@@ -1008,17 +1150,45 @@ viewHopperMode faze =
         ]
 
 
-viewBillValidator : Faze -> ListGroup.Item Msg
-viewBillValidator faze =
+viewBillValidator : Faze -> Mode -> ListGroup.Item Msg
+viewBillValidator faze mode =
+    case mode of
+        EditBillValidator editable ->
+            viewBillValidatorEditMode editable
+
+        _ ->
+            viewBillValidatorNormalMode faze
+
+
+viewBillValidatorNormalMode : Faze -> ListGroup.Item Msg
+viewBillValidatorNormalMode faze =
     ListGroup.li [ ListGroup.info ]
-        [ text "Bill validator: "
-        , ButtonGroup.radioButtonGroup []
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeBillValidator
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "Bill validator: "
+                        ++ fazeToString faze
+                ]
+            ]
+        ]
+
+
+viewBillValidatorEditMode : Faze -> ListGroup.Item Msg
+viewBillValidatorEditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
             [ ButtonGroup.radioButton
                 (faze == Disabled)
                 [ Button.primary
                 , Button.onClick <| SetBillValidator Disabled
                 ]
-                [ text "Disabled" ]
+                [ text "Disable" ]
             , ButtonGroup.radioButton
                 (faze == CcTalk)
                 [ Button.primary
