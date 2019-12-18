@@ -801,53 +801,48 @@ viewCoinNominal nominal mode =
 
 
 viewCoinNominalNormalMode : Int -> ListGroup.Item Msg
-viewCoinNominalNormalMode coinNominal =
+viewCoinNominalNormalMode nominal =
     ListGroup.li [ ListGroup.info ]
-        [ text "Coin nominal: "
-        , text <| String.fromInt coinNominal
-        , Button.button
-            [ Button.dark
+        [ Button.button
+            [ Button.roleLink
             , Button.attrs
                 [ Spacing.ml1
                 , onClick EditCoinNominalMode
                 ]
             ]
-            [ text "Edit" ]
+            [ text <|
+                "Coin nominal: "
+                    ++ String.fromInt nominal
+            ]
         ]
 
 
 viewCoinNominalEditMode : String -> ListGroup.Item Msg
 viewCoinNominalEditMode editable =
     ListGroup.li [ ListGroup.warning ]
-        [ Grid.container []
-            [ Grid.row [ Row.centerMd ]
-                [ Grid.col [ Col.mdAuto ] [ text "Coin nominal: " ]
-                , Grid.col [ Col.mdAuto ]
-                    [ InputGroup.config
-                        (InputGroup.text
-                            [ Input.id "coiNominalInput"
-                            , Input.attrs [ Spacing.mAuto ]
-                            , Input.onInput InputCoinNominal
-                            , Input.value editable
-                            ]
-                        )
-                        |> InputGroup.successors
-                            [ InputGroup.button
-                                [ Button.success
-                                , Button.onClick <|
-                                    SaveCoinNominal editable
-                                ]
-                                [ text "Save" ]
-                            , InputGroup.button
-                                [ Button.warning
-                                , Button.onClick NormalMode
-                                ]
-                                [ text "Cancel" ]
-                            ]
-                        |> InputGroup.view
-                    ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "coiNominalInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.onInput InputCoinNominal
+                , Input.placeholder "Coin nominal"
+                , Input.value editable
                 ]
-            ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveCoinNominal editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
         ]
 
 
@@ -865,52 +860,46 @@ viewHopperCoinNominal nominal mode =
 viewHopperCoinNominalNormalMode : Int -> ListGroup.Item Msg
 viewHopperCoinNominalNormalMode nominal =
     ListGroup.li [ ListGroup.info ]
-        [ text "Hopper coin nominal: "
-        , text <| String.fromInt nominal
-        , Button.button
-            [ Button.dark
+        [ Button.button
+            [ Button.roleLink
             , Button.attrs
                 [ Spacing.ml1
                 , onClick EditHopperCoinNominalMode
                 ]
             ]
-            [ text "Edit" ]
+            [ text <|
+                "Hopper coin nominal: "
+                    ++ String.fromInt nominal
+            ]
         ]
 
 
 viewHopperCoinNominalEditMode : String -> ListGroup.Item Msg
 viewHopperCoinNominalEditMode editable =
     ListGroup.li [ ListGroup.warning ]
-        [ Grid.container []
-            [ Grid.row [ Row.centerMd ]
-                [ Grid.col [ Col.mdAuto ]
-                    [ text "Hopper coin nominal: " ]
-                , Grid.col [ Col.mdAuto ]
-                    [ InputGroup.config
-                        (InputGroup.text
-                            [ Input.id "hopperCoiNominalInput"
-                            , Input.attrs [ Spacing.mAuto ]
-                            , Input.onInput InputHopperCoinNominal
-                            , Input.value editable
-                            ]
-                        )
-                        |> InputGroup.successors
-                            [ InputGroup.button
-                                [ Button.success
-                                , Button.onClick <|
-                                    SaveHopperCoinNominal editable
-                                ]
-                                [ text "Save" ]
-                            , InputGroup.button
-                                [ Button.warning
-                                , Button.onClick NormalMode
-                                ]
-                                [ text "Cancel" ]
-                            ]
-                        |> InputGroup.view
-                    ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "hopperCoiNominalInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.placeholder "Hopper coin nominal"
+                , Input.onInput InputHopperCoinNominal
+                , Input.value editable
                 ]
-            ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveHopperCoinNominal editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
         ]
 
 
@@ -928,52 +917,46 @@ viewCardPrice nominal mode =
 viewCardPriceNormalMode : Int -> ListGroup.Item Msg
 viewCardPriceNormalMode price =
     ListGroup.li [ ListGroup.info ]
-        [ text "Card price: "
-        , text <| String.fromInt price
-        , Button.button
-            [ Button.dark
+        [ Button.button
+            [ Button.roleLink
             , Button.attrs
                 [ Spacing.ml1
                 , onClick EditCardPriceMode
                 ]
             ]
-            [ text "Edit" ]
+            [ text <|
+                "Card price: "
+                    ++ String.fromInt price
+            ]
         ]
 
 
 viewCardPriceEditMode : String -> ListGroup.Item Msg
 viewCardPriceEditMode editable =
     ListGroup.li [ ListGroup.warning ]
-        [ Grid.container []
-            [ Grid.row [ Row.centerMd ]
-                [ Grid.col [ Col.mdAuto ]
-                    [ text "Card price: " ]
-                , Grid.col [ Col.mdAuto ]
-                    [ InputGroup.config
-                        (InputGroup.text
-                            [ Input.id "cardPriceInput"
-                            , Input.attrs [ Spacing.mAuto ]
-                            , Input.onInput InputCardPrice
-                            , Input.value editable
-                            ]
-                        )
-                        |> InputGroup.successors
-                            [ InputGroup.button
-                                [ Button.success
-                                , Button.onClick <|
-                                    SaveCardPrice editable
-                                ]
-                                [ text "Save" ]
-                            , InputGroup.button
-                                [ Button.warning
-                                , Button.onClick NormalMode
-                                ]
-                                [ text "Cancel" ]
-                            ]
-                        |> InputGroup.view
-                    ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "cardPriceInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.placeholder "Card price"
+                , Input.onInput InputCardPrice
+                , Input.value editable
                 ]
-            ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveCardPrice editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
         ]
 
 
