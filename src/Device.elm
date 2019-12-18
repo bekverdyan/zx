@@ -427,15 +427,14 @@ viewNameNormalMode : String -> Html Msg
 viewNameNormalMode name =
     div []
         [ Alert.simpleSecondary []
-            [ text name
-            , Button.button
-                [ Button.dark
+            [ Button.button
+                [ Button.roleLink
                 , Button.attrs
                     [ Spacing.ml1
                     , onClick NameEditMode
                     ]
                 ]
-                [ text "Edit" ]
+                [ h4 [] [ text name ] ]
             ]
         ]
 
