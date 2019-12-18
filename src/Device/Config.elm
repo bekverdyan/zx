@@ -9,6 +9,7 @@ module Device.Config exposing
     )
 
 import Bootstrap.Alert as Alert
+import Bootstrap.Badge as Badge
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Card as Card
@@ -896,9 +897,11 @@ viewCoinNominalNormalMode nominal =
                 ]
             ]
             [ h4 []
-                [ text <|
-                    "Coin nominal: "
-                        ++ String.fromInt nominal
+                [ text "Coin nominal: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        String.fromInt nominal
+                    ]
                 ]
             ]
         ]
@@ -957,7 +960,9 @@ viewHopperCoinNominalNormalMode nominal =
             [ h4 []
                 [ text <|
                     "Hopper coin nominal: "
-                        ++ String.fromInt nominal
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| String.fromInt nominal
+                    ]
                 ]
             ]
         ]
@@ -1016,7 +1021,8 @@ viewCardPriceNormalMode price =
             [ h4 []
                 [ text <|
                     "Card price: "
-                        ++ String.fromInt price
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| String.fromInt price ]
                 ]
             ]
         ]
@@ -1071,7 +1077,12 @@ viewHopperNormalMode faze =
                 , onClick EditModeHopper
                 ]
             ]
-            [ h4 [] [ text <| "Hopper: " ++ fazeToString faze ] ]
+            [ h4 []
+                [ text <| "Hopper: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
+                ]
+            ]
         ]
 
 
@@ -1081,19 +1092,19 @@ viewHopperEditMode faze =
         [ ButtonGroup.radioButtonGroup []
             [ ButtonGroup.radioButton
                 (faze == Disabled)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetHopper Disabled
                 ]
                 [ text "Disable" ]
             , ButtonGroup.radioButton
                 (faze == CcTalk)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetHopper CcTalk
                 ]
                 [ text "CcTalk" ]
             , ButtonGroup.radioButton
                 (faze == Pulse)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetHopper Pulse
                 ]
                 [ text "Pulse" ]
@@ -1124,7 +1135,8 @@ viewHopperModeNormalMode faze =
             [ h4 []
                 [ text <|
                     "Hopper mode: "
-                        ++ fazeToString faze
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
                 ]
             ]
         ]
@@ -1136,13 +1148,13 @@ viewHopperModeEditMode faze =
         [ ButtonGroup.radioButtonGroup []
             [ ButtonGroup.radioButton
                 (faze == Mode_1)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetHopperMode Mode_1
                 ]
                 [ text "Mode 1" ]
             , ButtonGroup.radioButton
                 (faze == Mode_2)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetHopperMode Mode_2
                 ]
                 [ text "Mode 2" ]
@@ -1173,7 +1185,8 @@ viewBillValidatorNormalMode faze =
             [ h4 []
                 [ text <|
                     "Bill validator: "
-                        ++ fazeToString faze
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
                 ]
             ]
         ]
@@ -1185,13 +1198,13 @@ viewBillValidatorEditMode faze =
         [ ButtonGroup.radioButtonGroup []
             [ ButtonGroup.radioButton
                 (faze == Disabled)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetBillValidator Disabled
                 ]
                 [ text "Disable" ]
             , ButtonGroup.radioButton
                 (faze == CcTalk)
-                [ Button.primary
+                [ Button.danger
                 , Button.onClick <| SetBillValidator CcTalk
                 ]
                 [ text "CcTalk" ]
