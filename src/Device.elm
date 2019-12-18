@@ -1,4 +1,20 @@
-module Device exposing (Device, Identifier, Mode(..), Model, Msg(..), Type(..), createShortcut, decoder, encode, idToString, init, newDevice, update, view)
+module Device exposing
+    ( Device
+    ,  Identifier
+       -- , Mode(..)
+
+    , Model
+    , Msg(..)
+    , Type(..)
+    , createShortcut
+    , decoder
+    , encode
+    , idToString
+    , init
+    , newDevice
+    , update
+    , view
+    )
 
 import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
