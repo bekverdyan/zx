@@ -416,9 +416,6 @@ view model =
                 ]
             , Block.text []
                 [ viewSettings model ]
-            , Block.custom <|
-                Button.button [ Button.primary ]
-                    [ text "Go somewhere" ]
             ]
         |> Card.view
 
