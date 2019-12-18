@@ -520,21 +520,21 @@ viewSettings model =
         )
         |> Tab.items
             [ Tab.item
-                { id = "counters"
-                , link = Tab.link [] [ text "Counters" ]
-                , pane =
-                    Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "" ]
-                        , p [] [ countersView ]
-                        ]
-                }
-            , Tab.item
                 { id = "settings"
                 , link = Tab.link [] [ text "Settings" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "" ]
                         , p [] [ settingsView ]
+                        ]
+                }
+            , Tab.item
+                { id = "counters"
+                , link = Tab.link [] [ text "Counters" ]
+                , pane =
+                    Tab.pane [ Spacing.mt3 ]
+                        [ h4 [] [ text "" ]
+                        , p [] [ countersView ]
                         ]
                 }
             ]
