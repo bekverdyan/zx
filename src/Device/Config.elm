@@ -44,6 +44,7 @@ type Mode
     | EditHopperCoinNominal String
     | EditCardPrice String
     | EditDeviceId String
+    | EditServerCode String
       -- SWITCHES
     | EditHopper Faze
     | EditHopperMode Faze
@@ -593,6 +594,10 @@ type Msg
     | EditModeDeviceId
     | InputDeviceId String
     | SaveDeviceId String
+      --Server code
+    | EditModeServerCode
+    | InputServerCode String
+    | SaveServerCode String
       -- SWITCHES
       --Hopper
     | EditModeHopper
@@ -782,6 +787,36 @@ update msg model =
             , False
             )
 
+        EditModeServerCode ->
+            ( { model
+                | mode =
+                    EditServerCode
+                        variablesOrig.serverCode
+              }
+            , False
+            )
+
+        InputServerCode editable ->
+            ( { model
+                | mode = EditServerCode editable
+              }
+            , False
+            )
+
+        SaveServerCode code ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | variables =
+                            { variablesOrig
+                                | serverCode = code
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
         EditModeHopper ->
             let
                 faze =
@@ -921,6 +956,9 @@ view model =
                             model.mode
                         , viewDeviceId
                             variables.deviceId
+                            model.mode
+                        , viewServerCode
+                            variables.serverCode
                             model.mode
                         ]
                     |> Card.view
@@ -1178,6 +1216,64 @@ viewDeviceIdEditMode editable =
                     [ Button.success
                     , Button.onClick <|
                         SaveDeviceId editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
+        ]
+
+
+viewServerCode : String -> Mode -> ListGroup.Item Msg
+viewServerCode code mode =
+    case mode of
+        EditServerCode editable ->
+            viewServerCodeEditMode editable
+
+        _ ->
+            viewServerCodeNormalMode code
+
+
+viewServerCodeNormalMode : String -> ListGroup.Item Msg
+viewServerCodeNormalMode code =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeServerCode
+                ]
+            ]
+            [ h4 []
+                [ text "Server code: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text code ]
+                ]
+            ]
+        ]
+
+
+viewServerCodeEditMode : String -> ListGroup.Item Msg
+viewServerCodeEditMode editable =
+    ListGroup.li [ ListGroup.warning ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "serverCodeInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.placeholder "Server code"
+                , Input.onInput InputServerCode
+                , Input.value editable
+                ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveServerCode editable
                     ]
                     [ text "Save" ]
                 , InputGroup.button
