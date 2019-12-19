@@ -1,6 +1,23 @@
-module Device exposing (Device, Identifier, Mode(..), Model, Msg(..), Type(..), createShortcut, decoder, encode, idToString, init, newDevice, update, view)
+module Device exposing
+    ( Device
+    ,  Identifier
+       -- , Mode(..)
+
+    , Model
+    , Msg(..)
+    , Type(..)
+    , createShortcut
+    , decoder
+    , encode
+    , idToString
+    , init
+    , newDevice
+    , update
+    , view
+    )
 
 import Bootstrap.Alert as Alert
+import Bootstrap.Badge as Badge
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
@@ -256,6 +273,7 @@ type Msg
     | NormalMode
     | NameInput String
     | SettingsMsg TabMsg
+    | GoToContainer BranchShortcut.Identifier
 
 
 type TabMsg
@@ -373,6 +391,9 @@ update msg model =
             , False
             )
 
+        GoToContainer id ->
+            ( model, False )
+
 
 
 -- VIEW
@@ -392,34 +413,71 @@ view model =
                 ]
             ]
         |> Card.block []
-            [ Block.titleH4 [] [ viewInfo model.device.info ]
-            , Block.titleH4 []
-                [ text <|
-                    "Container: "
-                        ++ model.device.branch.name
-                ]
+            [ Block.titleH4 [] [ viewCommon model ]
             , Block.text []
                 [ viewSettings model ]
-            , Block.custom <|
-                Button.button [ Button.primary ]
-                    [ text "Go somewhere" ]
             ]
         |> Card.view
+
+
+viewCommon : Model -> Html Msg
+viewCommon model =
+    let
+        ( deviceModel, version, softVersion ) =
+            model.device.info
+
+        container =
+            model.device.branch
+
+        textView : String -> String
+        textView value =
+            if String.isEmpty value then
+                "NotSet"
+
+            else
+                value
+    in
+    div []
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick <| GoToContainer container.id
+                ]
+            ]
+            [ h4 []
+                [ text "Container: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| container.name ]
+                ]
+            ]
+        , h4 []
+            [ text "Model: "
+            , Badge.pillDanger [ Spacing.ml1 ]
+                [ text <| textView deviceModel ]
+            ]
+        , h4 []
+            [ text "Version: "
+            , Badge.pillDanger [ Spacing.ml1 ]
+                [ text <| textView version ]
+            ]
+        , h4 []
+            [ text "Soft version: "
+            , Badge.pillDanger [ Spacing.ml1 ]
+                [ text <| textView softVersion ]
+            ]
+        ]
 
 
 viewNameNormalMode : String -> Html Msg
 viewNameNormalMode name =
     div []
-        [ Alert.simpleSecondary []
-            [ text name
-            , Button.button
-                [ Button.dark
-                , Button.attrs
-                    [ Spacing.ml1
-                    , onClick NameEditMode
-                    ]
+        [ h3 []
+            [ Badge.badgeLight
+                [ Spacing.ml1
+                , onClick NameEditMode
                 ]
-                [ text "Edit" ]
+                [ text name ]
             ]
         ]
 
@@ -450,24 +508,6 @@ viewNameEditMode editable =
                 |> InputGroup.view
             ]
         ]
-
-
-viewInfo : Info -> Html Msg
-viewInfo ( model, version, softVersion ) =
-    Card.config []
-        |> Card.listGroup
-            [ ListGroup.li [ ListGroup.success ]
-                [ text <| "Model: " ++ model ]
-            , ListGroup.li [ ListGroup.info ]
-                [ text <| "Version: " ++ version ]
-            , ListGroup.li [ ListGroup.warning ]
-                [ text <| "Soft Version: " ++ softVersion ]
-            ]
-        |> Card.view
-
-
-
--- TODO View counters and settings in Tabs
 
 
 viewSettings : Model -> Html Msg
@@ -505,21 +545,21 @@ viewSettings model =
         )
         |> Tab.items
             [ Tab.item
-                { id = "counters"
-                , link = Tab.link [] [ text "Counters" ]
-                , pane =
-                    Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "" ]
-                        , p [] [ countersView ]
-                        ]
-                }
-            , Tab.item
                 { id = "settings"
                 , link = Tab.link [] [ text "Settings" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "" ]
                         , p [] [ settingsView ]
+                        ]
+                }
+            , Tab.item
+                { id = "counters"
+                , link = Tab.link [] [ text "Counters" ]
+                , pane =
+                    Tab.pane [ Spacing.mt3 ]
+                        [ h4 [] [ text "" ]
+                        , p [] [ countersView ]
                         ]
                 }
             ]
