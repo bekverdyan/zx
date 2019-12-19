@@ -45,6 +45,7 @@ type Mode
     | EditCardPrice String
     | EditDeviceId String
     | EditServerCode String
+    | EditBonusPercent String
       -- SWITCHES
     | EditHopper Faze
     | EditHopperMode Faze
@@ -598,6 +599,10 @@ type Msg
     | EditModeServerCode
     | InputServerCode String
     | SaveServerCode String
+      --Bonus percent
+    | EditModeBonusPercent
+    | InputBonusPercent String
+    | SaveBonusPercent String
       -- SWITCHES
       --Hopper
     | EditModeHopper
@@ -817,6 +822,46 @@ update msg model =
             , True
             )
 
+        EditModeBonusPercent ->
+            ( { model
+                | mode =
+                    EditBonusPercent <|
+                        String.fromInt
+                            variablesOrig.bonusPercent
+              }
+            , False
+            )
+
+        SaveBonusPercent percent ->
+            let
+                parsed =
+                    case String.toInt percent of
+                        Just value ->
+                            value
+
+                        Nothing ->
+                            0
+            in
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | variables =
+                            { variablesOrig
+                                | bonusPercent = parsed
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        InputBonusPercent editable ->
+            ( { model
+                | mode = EditBonusPercent editable
+              }
+            , False
+            )
+
         EditModeHopper ->
             let
                 faze =
@@ -959,6 +1004,9 @@ view model =
                             model.mode
                         , viewServerCode
                             variables.serverCode
+                            model.mode
+                        , viewBonusPercent
+                            variables.bonusPercent
                             model.mode
                         ]
                     |> Card.view
@@ -1274,6 +1322,67 @@ viewServerCodeEditMode editable =
                     [ Button.success
                     , Button.onClick <|
                         SaveServerCode editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
+        ]
+
+
+viewBonusPercent : Int -> Mode -> ListGroup.Item Msg
+viewBonusPercent percent mode =
+    case mode of
+        EditBonusPercent editable ->
+            viewBonusPercentEditMode editable
+
+        _ ->
+            viewBonusPercentNormalMode
+                percent
+
+
+viewBonusPercentNormalMode : Int -> ListGroup.Item Msg
+viewBonusPercentNormalMode percent =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeBonusPercent
+                ]
+            ]
+            [ h4 []
+                [ text "Bonus percent: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        String.fromInt percent
+                    ]
+                ]
+            ]
+        ]
+
+
+viewBonusPercentEditMode : String -> ListGroup.Item Msg
+viewBonusPercentEditMode editable =
+    ListGroup.li [ ListGroup.warning ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "bonusPercentInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.onInput InputBonusPercent
+                , Input.placeholder "Bonus percent"
+                , Input.value editable
+                ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveBonusPercent editable
                     ]
                     [ text "Save" ]
                 , InputGroup.button
