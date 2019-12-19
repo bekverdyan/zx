@@ -39,12 +39,17 @@ type alias Model =
 
 type Mode
     = Normal
+      -- VARIABLES
     | EditCoinNominal String
     | EditHopperCoinNominal String
     | EditCardPrice String
+    | EditDeviceId String
+      -- SWITCHES
     | EditHopper Faze
     | EditHopperMode Faze
     | EditBillValidator Faze
+    | EditRfidReader1 Faze
+    | EditRfidReader2 Faze
 
 
 type alias Parameters =
@@ -571,25 +576,53 @@ encode model =
 
 type Msg
     = NormalMode
+      -- VARIABLES
+      --Coin nominal
     | EditCoinNominalMode
-    | SaveCoinNominal String
     | InputCoinNominal String
+    | SaveCoinNominal String
+      --Hopper coin nominal
     | EditHopperCoinNominalMode
-    | SaveHopperCoinNominal String
     | InputHopperCoinNominal String
+    | SaveHopperCoinNominal String
+      --Card price
     | EditCardPriceMode
-    | SaveCardPrice String
     | InputCardPrice String
-    | SetHopper Faze
+    | SaveCardPrice String
+      --Device ID
+    | EditModeDeviceId
+    | InputDeviceId String
+    | SaveDeviceId String
+      -- SWITCHES
+      --Hopper
     | EditModeHopper
-    | SetHopperMode Faze
+    | SetHopper Faze
+      --Hopper mode
     | EditModeHopperMode
+    | SetHopperMode Faze
+      --Bill validator
     | EditModeBillValidator
     | SetBillValidator Faze
+      --Rfid reader 1
+    | EditModeRfidReader1
+    | SetRfidReader1 Faze
+      -- rfid reader 2
+    | EditModeRfidReader2
+    | SetRfidReader2 Faze
 
 
 update : Msg -> Model -> ( Model, Bool )
 update msg model =
+    let
+        parametersOrig =
+            model.parameters
+
+        variablesOrig =
+            parametersOrig.variables
+
+        switchesOrig =
+            parametersOrig.switches
+    in
     case msg of
         NormalMode ->
             ( { model | mode = Normal }, False )
@@ -597,7 +630,7 @@ update msg model =
         EditCoinNominalMode ->
             let
                 coinNominal =
-                    model.parameters.variables.coinNominal
+                    variablesOrig.coinNominal
             in
             ( { model
                 | mode =
@@ -609,12 +642,6 @@ update msg model =
 
         SaveCoinNominal nominal ->
             let
-                parametersOrig =
-                    model.parameters
-
-                variablesOrig =
-                    parametersOrig.variables
-
                 parsed =
                     case String.toInt nominal of
                         Just value ->
@@ -646,7 +673,7 @@ update msg model =
         EditHopperCoinNominalMode ->
             let
                 hopperCoinNominal =
-                    model.parameters.variables.hopperCoinNominal
+                    variablesOrig.hopperCoinNominal
             in
             ( { model
                 | mode =
@@ -658,12 +685,6 @@ update msg model =
 
         SaveHopperCoinNominal nominal ->
             let
-                parametersOrig =
-                    model.parameters
-
-                variablesOrig =
-                    parametersOrig.variables
-
                 parsed =
                     case String.toInt nominal of
                         Just value ->
@@ -695,7 +716,7 @@ update msg model =
         EditCardPriceMode ->
             let
                 cardPrice =
-                    model.parameters.variables.cardPrice
+                    variablesOrig.cardPrice
             in
             ( { model
                 | mode =
@@ -707,12 +728,6 @@ update msg model =
 
         SaveCardPrice price ->
             let
-                parametersOrig =
-                    model.parameters
-
-                variablesOrig =
-                    parametersOrig.variables
-
                 parsed =
                     case String.toInt price of
                         Just value ->
@@ -741,6 +756,32 @@ update msg model =
             , False
             )
 
+        SaveDeviceId id ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | variables =
+                            { variablesOrig
+                                | deviceId = id
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        InputDeviceId editable ->
+            ( { model | mode = EditDeviceId editable }, False )
+
+        EditModeDeviceId ->
+            ( { model
+                | mode =
+                    EditDeviceId
+                        variablesOrig.deviceId
+              }
+            , False
+            )
+
         EditModeHopper ->
             let
                 faze =
@@ -749,20 +790,13 @@ update msg model =
             ( { model | mode = EditHopper faze }, False )
 
         SetHopper faze ->
-            let
-                switchesOrig =
-                    model.parameters.switches
-
-                switches =
-                    { switchesOrig | hopper = faze }
-
-                parametersOrig =
-                    model.parameters
-            in
             ( { model
                 | parameters =
                     { parametersOrig
-                        | switches = switches
+                        | switches =
+                            { switchesOrig
+                                | hopper = faze
+                            }
                     }
                 , mode = Normal
               }
@@ -777,20 +811,13 @@ update msg model =
             ( { model | mode = EditHopperMode faze }, False )
 
         SetHopperMode faze ->
-            let
-                switchesOrig =
-                    model.parameters.switches
-
-                switches =
-                    { switchesOrig | hopperMode = faze }
-
-                parametersOrig =
-                    model.parameters
-            in
             ( { model
                 | parameters =
                     { parametersOrig
-                        | switches = switches
+                        | switches =
+                            { switchesOrig
+                                | hopperMode = faze
+                            }
                     }
                 , mode = Normal
               }
@@ -805,20 +832,59 @@ update msg model =
             ( { model | mode = EditBillValidator faze }, False )
 
         SetBillValidator faze ->
-            let
-                switchesOrig =
-                    model.parameters.switches
-
-                switches =
-                    { switchesOrig | billValidator = faze }
-
-                parametersOrig =
-                    model.parameters
-            in
             ( { model
                 | parameters =
                     { parametersOrig
-                        | switches = switches
+                        | switches =
+                            { switchesOrig
+                                | billValidator = faze
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        EditModeRfidReader1 ->
+            ( { model
+                | mode =
+                    EditRfidReader1
+                        switchesOrig.rfidReader1
+              }
+            , False
+            )
+
+        SetRfidReader1 reader ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | switches =
+                            { switchesOrig
+                                | rfidReader1 = reader
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        EditModeRfidReader2 ->
+            ( { model
+                | mode =
+                    EditRfidReader2
+                        switchesOrig.rfidReader2
+              }
+            , False
+            )
+
+        SetRfidReader2 reader ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | switches =
+                            { switchesOrig
+                                | rfidReader2 = reader
+                            }
                     }
                 , mode = Normal
               }
@@ -853,6 +919,9 @@ view model =
                         , viewCardPrice
                             variables.cardPrice
                             model.mode
+                        , viewDeviceId
+                            variables.deviceId
+                            model.mode
                         ]
                     |> Card.view
                 ]
@@ -867,6 +936,12 @@ view model =
                             model.mode
                         , viewBillValidator
                             switches.billValidator
+                            model.mode
+                        , viewRfidReader1
+                            switches.rfidReader1
+                            model.mode
+                        , viewRfidReader2
+                            switches.rfidReader2
                             model.mode
                         ]
                     |> Card.view
@@ -1057,6 +1132,64 @@ viewCardPriceEditMode editable =
         ]
 
 
+viewDeviceId : String -> Mode -> ListGroup.Item Msg
+viewDeviceId id mode =
+    case mode of
+        EditDeviceId editable ->
+            viewDeviceIdEditMode editable
+
+        _ ->
+            viewDeviceIdNormalMode id
+
+
+viewDeviceIdNormalMode : String -> ListGroup.Item Msg
+viewDeviceIdNormalMode id =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeDeviceId
+                ]
+            ]
+            [ h4 []
+                [ text "Device ID: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text id ]
+                ]
+            ]
+        ]
+
+
+viewDeviceIdEditMode : String -> ListGroup.Item Msg
+viewDeviceIdEditMode editable =
+    ListGroup.li [ ListGroup.warning ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "deviceIdInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.placeholder "Device ID"
+                , Input.onInput InputDeviceId
+                , Input.value editable
+                ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveDeviceId editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
+        ]
+
+
 viewHopper : Faze -> Mode -> ListGroup.Item Msg
 viewHopper faze mode =
     case mode of
@@ -1208,6 +1341,106 @@ viewBillValidatorEditMode faze =
                 , Button.onClick <| SetBillValidator CcTalk
                 ]
                 [ text "CcTalk" ]
+            ]
+        ]
+
+
+viewRfidReader1 : Faze -> Mode -> ListGroup.Item Msg
+viewRfidReader1 faze mode =
+    case mode of
+        EditRfidReader1 editable ->
+            viewRfidReader1EditMode editable
+
+        _ ->
+            viewRfidReader1NormalMode faze
+
+
+viewRfidReader1NormalMode : Faze -> ListGroup.Item Msg
+viewRfidReader1NormalMode faze =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeRfidReader1
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "RfidReader1: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
+                ]
+            ]
+        ]
+
+
+viewRfidReader1EditMode : Faze -> ListGroup.Item Msg
+viewRfidReader1EditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
+            [ ButtonGroup.radioButton
+                (faze == Disabled)
+                [ Button.danger
+                , Button.onClick <| SetRfidReader1 Disabled
+                ]
+                [ text "Disable" ]
+            , ButtonGroup.radioButton
+                (faze == Enabled)
+                [ Button.danger
+                , Button.onClick <| SetRfidReader1 Enabled
+                ]
+                [ text "Enable" ]
+            ]
+        ]
+
+
+viewRfidReader2 : Faze -> Mode -> ListGroup.Item Msg
+viewRfidReader2 faze mode =
+    case mode of
+        EditRfidReader2 editable ->
+            viewRfidReader2EditMode editable
+
+        _ ->
+            viewRfidReader2NormalMode faze
+
+
+viewRfidReader2NormalMode : Faze -> ListGroup.Item Msg
+viewRfidReader2NormalMode faze =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeRfidReader2
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "RfidReader2: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
+                ]
+            ]
+        ]
+
+
+viewRfidReader2EditMode : Faze -> ListGroup.Item Msg
+viewRfidReader2EditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
+            [ ButtonGroup.radioButton
+                (faze == Disabled)
+                [ Button.danger
+                , Button.onClick <| SetRfidReader2 Disabled
+                ]
+                [ text "Disable" ]
+            , ButtonGroup.radioButton
+                (faze == Enabled)
+                [ Button.danger
+                , Button.onClick <| SetRfidReader2 Enabled
+                ]
+                [ text "Enable" ]
             ]
         ]
 
