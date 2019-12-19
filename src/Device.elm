@@ -273,6 +273,7 @@ type Msg
     | NormalMode
     | NameInput String
     | SettingsMsg TabMsg
+    | GoToContainer BranchShortcut.Identifier
 
 
 type TabMsg
@@ -390,6 +391,9 @@ update msg model =
             , False
             )
 
+        GoToContainer id ->
+            ( model, False )
+
 
 
 -- VIEW
@@ -434,10 +438,18 @@ viewCommon model =
                 value
     in
     div []
-        [ h4 []
-            [ text "Container: "
-            , Badge.badgeDark [ Spacing.ml1 ]
-                [ text <| textView container.name ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick <| GoToContainer container.id
+                ]
+            ]
+            [ h4 []
+                [ text "Container: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| container.name ]
+                ]
             ]
         , h4 []
             [ text "Model: "

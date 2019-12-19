@@ -282,19 +282,41 @@ update msg model =
                             in
                             ( { newModel | editor = editorModel }, cmdMsg )
 
-                _ ->
-                    let
-                        ( editorModel, saveMe ) =
-                            Editor.update editorMsg model.editor
+                Editor.DeviceMsg deviceMsg ->
+                    case deviceMsg of
+                        Device.GoToContainer id ->
+                            let
+                                editor =
+                                    case model.branches of
+                                        Just branches ->
+                                            case Dict.get id branches of
+                                                Just branch ->
+                                                    Editor.Branch
+                                                        { branch = branch
+                                                        , mode = Branch.Normal
+                                                        }
 
-                        ( newModel, cmdMsg ) =
-                            if saveMe == True then
-                                saveStuff editorModel model
+                                                Nothing ->
+                                                    Editor.NotFound
 
-                            else
-                                ( model, Cmd.none )
-                    in
-                    ( { newModel | editor = editorModel }, cmdMsg )
+                                        Nothing ->
+                                            Editor.NotFound
+                            in
+                            ( { model | editor = editor }, Cmd.none )
+
+                        _ ->
+                            let
+                                ( editorModel, saveMe ) =
+                                    Editor.update editorMsg model.editor
+
+                                ( newModel, cmdMsg ) =
+                                    if saveMe == True then
+                                        saveStuff editorModel model
+
+                                    else
+                                        ( model, Cmd.none )
+                            in
+                            ( { newModel | editor = editorModel }, cmdMsg )
 
         DashboardMsg dashboardMsg ->
             case dashboardMsg of
