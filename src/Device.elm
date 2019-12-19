@@ -409,16 +409,52 @@ view model =
                 ]
             ]
         |> Card.block []
-            [ Block.titleH4 [] [ viewInfo model.device.info ]
-            , Block.titleH4 []
-                [ text <|
-                    "Container: "
-                        ++ model.device.branch.name
-                ]
+            [ Block.titleH4 [] [ viewCommon model ]
             , Block.text []
                 [ viewSettings model ]
             ]
         |> Card.view
+
+
+viewCommon : Model -> Html Msg
+viewCommon model =
+    let
+        ( deviceModel, version, softVersion ) =
+            model.device.info
+
+        container =
+            model.device.branch
+
+        textView : String -> String
+        textView value =
+            if String.isEmpty value then
+                "NotSet"
+
+            else
+                value
+    in
+    div []
+        [ h4 []
+            [ text "Container: "
+            , Badge.badgeDark [ Spacing.ml1 ]
+                [ text <| textView container.name ]
+            ]
+        , h4 []
+            [ text "Model: "
+            , Badge.pillDanger [ Spacing.ml1 ]
+                [ text <| textView deviceModel ]
+            ]
+        , h4 []
+            [ text "Version: "
+            , Badge.pillDanger [ Spacing.ml1 ]
+                [ text <| textView version ]
+            ]
+        , h4 []
+            [ text "Soft version: "
+            , Badge.pillDanger [ Spacing.ml1 ]
+                [ text <| textView softVersion ]
+            ]
+        ]
 
 
 viewNameNormalMode : String -> Html Msg
@@ -460,24 +496,6 @@ viewNameEditMode editable =
                 |> InputGroup.view
             ]
         ]
-
-
-viewInfo : Info -> Html Msg
-viewInfo ( model, version, softVersion ) =
-    Card.config []
-        |> Card.listGroup
-            [ ListGroup.li [ ListGroup.success ]
-                [ text <| "Model: " ++ model ]
-            , ListGroup.li [ ListGroup.info ]
-                [ text <| "Version: " ++ version ]
-            , ListGroup.li [ ListGroup.warning ]
-                [ text <| "Soft Version: " ++ softVersion ]
-            ]
-        |> Card.view
-
-
-
--- TODO View counters and settings in Tabs
 
 
 viewSettings : Model -> Html Msg
