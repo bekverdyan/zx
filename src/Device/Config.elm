@@ -52,6 +52,7 @@ type Mode
     | EditBillValidator Faze
     | EditRfidReader1 Faze
     | EditRfidReader2 Faze
+    | EditDispenser Faze
 
 
 type alias Parameters =
@@ -619,6 +620,9 @@ type Msg
       -- rfid reader 2
     | EditModeRfidReader2
     | SetRfidReader2 Faze
+      --Dispenser
+    | EditModeDispenser
+    | SetDispenser Faze
 
 
 update : Msg -> Model -> ( Model, Bool )
@@ -971,6 +975,29 @@ update msg model =
             , True
             )
 
+        EditModeDispenser ->
+            ( { model
+                | mode =
+                    EditDispenser
+                        switchesOrig.dispenser
+              }
+            , False
+            )
+
+        SetDispenser dispenser ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | switches =
+                            { switchesOrig
+                                | dispenser = dispenser
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
 
 
 -- VIEW
@@ -1028,6 +1055,9 @@ view model =
                             model.mode
                         , viewRfidReader2
                             switches.rfidReader2
+                            model.mode
+                        , viewDispenser
+                            switches.dispenser
                             model.mode
                         ]
                     |> Card.view
@@ -1646,6 +1676,62 @@ viewRfidReader2EditMode faze =
                 , Button.onClick <| SetRfidReader2 Enabled
                 ]
                 [ text "Enable" ]
+            ]
+        ]
+
+
+viewDispenser : Faze -> Mode -> ListGroup.Item Msg
+viewDispenser faze mode =
+    case mode of
+        EditDispenser editable ->
+            viewDispenserEditMode editable
+
+        _ ->
+            viewDispenserNormalMode faze
+
+
+viewDispenserNormalMode : Faze -> ListGroup.Item Msg
+viewDispenserNormalMode faze =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeDispenser
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "Dispenser: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
+                ]
+            ]
+        ]
+
+
+viewDispenserEditMode : Faze -> ListGroup.Item Msg
+viewDispenserEditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
+            [ ButtonGroup.radioButton
+                (faze == Disabled)
+                [ Button.danger
+                , Button.onClick <| SetDispenser Disabled
+                ]
+                [ text "Disable" ]
+            , ButtonGroup.radioButton
+                (faze == CRT_531)
+                [ Button.danger
+                , Button.onClick <| SetDispenser CRT_531
+                ]
+                [ text "CRT 531" ]
+            , ButtonGroup.radioButton
+                (faze == TCD_820M)
+                [ Button.danger
+                , Button.onClick <| SetDispenser TCD_820M
+                ]
+                [ text "TCD 820M" ]
             ]
         ]
 
