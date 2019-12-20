@@ -8,6 +8,7 @@ module Device.Config exposing
     , view
     )
 
+import Array as Array
 import Bootstrap.Alert as Alert
 import Bootstrap.Badge as Badge
 import Bootstrap.Button as Button
@@ -22,6 +23,7 @@ import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Table as Table
 import Bootstrap.Utilities.Spacing as Spacing
 import Html exposing (..)
+import Html.Attributes as Attrs
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
@@ -64,10 +66,14 @@ type alias Parameters =
     }
 
 
+type alias Array =
+    Array.Array Int
+
+
 type alias Variables =
     { coinNominal : Int
     , hopperCoinNominal : Int
-    , billNominal : List Int
+    , billNominal : Array
     , cardPrice : Int
     , deviceId : String
     , serverCode : String
@@ -167,7 +173,7 @@ newVariables : Variables
 newVariables =
     { coinNominal = 0
     , hopperCoinNominal = 0
-    , billNominal = []
+    , billNominal = Array.initialize 10 (\n -> 0)
     , cardPrice = 0
     , deviceId = ""
     , serverCode = ""
@@ -222,7 +228,7 @@ decodeVariables =
     D.map8 Variables
         (D.field "coinNominal" D.int)
         (D.field "hopperCoinNominal" D.int)
-        (D.field "billNominal" <| D.list D.int)
+        (D.field "billNominal" <| D.array D.int)
         (D.field "cardPrice" D.int)
         (D.field "deviceId" D.string)
         (D.field "serverCode" D.string)
@@ -421,7 +427,7 @@ encodeVariables variables =
         , ( "hopperCoinNominal"
           , E.int variables.hopperCoinNominal
           )
-        , ( "billNominal", E.list E.int variables.billNominal )
+        , ( "billNominal", E.array E.int variables.billNominal )
         , ( "cardPrice", E.int variables.cardPrice )
         , ( "deviceId", E.string variables.deviceId )
         , ( "serverCode", E.string variables.serverCode )
@@ -1122,6 +1128,8 @@ view model =
                         , viewHopperCoinNominal
                             variables.hopperCoinNominal
                             model.mode
+                        , viewBillNominal
+                            variables.billNominal
                         , viewCardPrice
                             variables.cardPrice
                             model.mode
@@ -1294,6 +1302,85 @@ viewHopperCoinNominalEditMode editable =
                 ]
             |> InputGroup.view
         ]
+
+
+viewBillNominal : Array -> ListGroup.Item Msg
+viewBillNominal nominal =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+
+                -- , onClick EditHopperCoinNominalMode
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "Bill nominal: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 0 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 1 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 2 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 3 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 4 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 5 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 6 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 7 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 8 nominal
+                    ]
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        viewNominalMember <|
+                            Array.get 9 nominal
+                    ]
+                ]
+            ]
+        ]
+
+
+viewNominalMember : Maybe Int -> String
+viewNominalMember member =
+    case member of
+        Just value ->
+            String.fromInt value
+
+        Nothing ->
+            ""
 
 
 viewCardPrice : Int -> Mode -> ListGroup.Item Msg
