@@ -46,6 +46,7 @@ type Mode
     | EditDeviceId String
     | EditServerCode String
     | EditBonusPercent String
+    | EditBonusThreshold String
       -- SWITCHES
     | EditHopper Faze
     | EditHopperMode Faze
@@ -53,6 +54,8 @@ type Mode
     | EditRfidReader1 Faze
     | EditRfidReader2 Faze
     | EditDispenser Faze
+    | EditCardOut Faze
+    | EditNetwork Faze
 
 
 type alias Parameters =
@@ -604,6 +607,10 @@ type Msg
     | EditModeBonusPercent
     | InputBonusPercent String
     | SaveBonusPercent String
+      --Bonus threshold
+    | EditModeBonusThreshold
+    | InputBonusThreshold String
+    | SaveBonusThreshold String
       -- SWITCHES
       --Hopper
     | EditModeHopper
@@ -623,6 +630,12 @@ type Msg
       --Dispenser
     | EditModeDispenser
     | SetDispenser Faze
+      --Card out
+    | EditModeCardOut
+    | SetCardOut Faze
+      --Network
+    | EditModeNetwork
+    | SetNetwork Faze
 
 
 update : Msg -> Model -> ( Model, Bool )
@@ -866,6 +879,46 @@ update msg model =
             , False
             )
 
+        EditModeBonusThreshold ->
+            ( { model
+                | mode =
+                    EditBonusThreshold <|
+                        String.fromInt
+                            variablesOrig.bonusThreshold
+              }
+            , False
+            )
+
+        SaveBonusThreshold threshold ->
+            let
+                parsed =
+                    case String.toInt threshold of
+                        Just value ->
+                            value
+
+                        Nothing ->
+                            0
+            in
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | variables =
+                            { variablesOrig
+                                | bonusThreshold = parsed
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        InputBonusThreshold editable ->
+            ( { model
+                | mode = EditBonusThreshold editable
+              }
+            , False
+            )
+
         EditModeHopper ->
             let
                 faze =
@@ -998,6 +1051,52 @@ update msg model =
             , True
             )
 
+        EditModeCardOut ->
+            ( { model
+                | mode =
+                    EditCardOut
+                        switchesOrig.cardOut
+              }
+            , False
+            )
+
+        SetCardOut cardOut ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | switches =
+                            { switchesOrig
+                                | cardOut = cardOut
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
+        EditModeNetwork ->
+            ( { model
+                | mode =
+                    EditNetwork
+                        switchesOrig.network
+              }
+            , False
+            )
+
+        SetNetwork network ->
+            ( { model
+                | parameters =
+                    { parametersOrig
+                        | switches =
+                            { switchesOrig
+                                | network = network
+                            }
+                    }
+                , mode = Normal
+              }
+            , True
+            )
+
 
 
 -- VIEW
@@ -1035,6 +1134,9 @@ view model =
                         , viewBonusPercent
                             variables.bonusPercent
                             model.mode
+                        , viewBonusThreshold
+                            variables.bonusThreshold
+                            model.mode
                         ]
                     |> Card.view
                 ]
@@ -1058,6 +1160,12 @@ view model =
                             model.mode
                         , viewDispenser
                             switches.dispenser
+                            model.mode
+                        , viewCardOut
+                            switches.cardOut
+                            model.mode
+                        , viewNetwork
+                            switches.network
                             model.mode
                         ]
                     |> Card.view
@@ -1425,6 +1533,67 @@ viewBonusPercentEditMode editable =
         ]
 
 
+viewBonusThreshold : Int -> Mode -> ListGroup.Item Msg
+viewBonusThreshold threshold mode =
+    case mode of
+        EditBonusThreshold editable ->
+            viewBonusThresholdEditMode editable
+
+        _ ->
+            viewBonusThresholdNormalMode
+                threshold
+
+
+viewBonusThresholdNormalMode : Int -> ListGroup.Item Msg
+viewBonusThresholdNormalMode threshold =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeBonusThreshold
+                ]
+            ]
+            [ h4 []
+                [ text "Bonus threshold: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <|
+                        String.fromInt threshold
+                    ]
+                ]
+            ]
+        ]
+
+
+viewBonusThresholdEditMode : String -> ListGroup.Item Msg
+viewBonusThresholdEditMode editable =
+    ListGroup.li [ ListGroup.warning ]
+        [ InputGroup.config
+            (InputGroup.text
+                [ Input.id "bonusThresholdInput"
+                , Input.attrs [ Spacing.mAuto ]
+                , Input.onInput InputBonusThreshold
+                , Input.placeholder "Bonus threshold"
+                , Input.value editable
+                ]
+            )
+            |> InputGroup.successors
+                [ InputGroup.button
+                    [ Button.success
+                    , Button.onClick <|
+                        SaveBonusThreshold editable
+                    ]
+                    [ text "Save" ]
+                , InputGroup.button
+                    [ Button.warning
+                    , Button.onClick NormalMode
+                    ]
+                    [ text "Cancel" ]
+                ]
+            |> InputGroup.view
+        ]
+
+
 viewHopper : Faze -> Mode -> ListGroup.Item Msg
 viewHopper faze mode =
     case mode of
@@ -1732,6 +1901,124 @@ viewDispenserEditMode faze =
                 , Button.onClick <| SetDispenser TCD_820M
                 ]
                 [ text "TCD 820M" ]
+            ]
+        ]
+
+
+viewCardOut : Faze -> Mode -> ListGroup.Item Msg
+viewCardOut faze mode =
+    case mode of
+        EditCardOut editable ->
+            viewCardOutEditMode editable
+
+        _ ->
+            viewCardOutNormalMode faze
+
+
+viewCardOutNormalMode : Faze -> ListGroup.Item Msg
+viewCardOutNormalMode faze =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeCardOut
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "Card out: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
+                ]
+            ]
+        ]
+
+
+viewCardOutEditMode : Faze -> ListGroup.Item Msg
+viewCardOutEditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
+            [ ButtonGroup.radioButton
+                (faze == ToGate)
+                [ Button.danger
+                , Button.onClick <| SetCardOut ToGate
+                ]
+                [ text "ToGate" ]
+            , ButtonGroup.radioButton
+                (faze == FullOut)
+                [ Button.danger
+                , Button.onClick <| SetCardOut FullOut
+                ]
+                [ text "FullOut" ]
+            ]
+        ]
+
+
+viewNetwork : Faze -> Mode -> ListGroup.Item Msg
+viewNetwork faze mode =
+    case mode of
+        EditNetwork editable ->
+            viewNetworkEditMode editable
+
+        _ ->
+            viewNetworkNormalMode faze
+
+
+viewNetworkNormalMode : Faze -> ListGroup.Item Msg
+viewNetworkNormalMode faze =
+    ListGroup.li [ ListGroup.info ]
+        [ Button.button
+            [ Button.roleLink
+            , Button.attrs
+                [ Spacing.ml1
+                , onClick EditModeNetwork
+                ]
+            ]
+            [ h4 []
+                [ text <|
+                    "Network: "
+                , Badge.badgeDark [ Spacing.ml1 ]
+                    [ text <| fazeToString faze ]
+                ]
+            ]
+        ]
+
+
+viewNetworkEditMode : Faze -> ListGroup.Item Msg
+viewNetworkEditMode faze =
+    ListGroup.li [ ListGroup.warning ]
+        [ ButtonGroup.radioButtonGroup []
+            [ ButtonGroup.radioButton
+                (faze == None)
+                [ Button.danger
+                , Button.onClick <| SetNetwork None
+                ]
+                [ text "None" ]
+            , ButtonGroup.radioButton
+                (faze == RS_485)
+                [ Button.danger
+                , Button.onClick <| SetNetwork RS_485
+                ]
+                [ text "RS 485" ]
+            , ButtonGroup.radioButton
+                (faze == Can)
+                [ Button.danger
+                , Button.onClick <| SetNetwork Can
+                ]
+                [ text "Can" ]
+            , ButtonGroup.radioButton
+                (faze == Ethernet)
+                [ Button.danger
+                , Button.onClick <| SetNetwork Ethernet
+                ]
+                [ text "Ethernet" ]
+            , ButtonGroup.radioButton
+                (faze == WiFi)
+                [ Button.danger
+                , Button.onClick <| SetNetwork WiFi
+                ]
+                [ text "WiFi" ]
             ]
         ]
 
