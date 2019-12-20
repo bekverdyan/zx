@@ -49,7 +49,7 @@ update msg model =
                 _ ->
                     let
                         gag =
-                            Debug.log "This case should not happen basically" "!"
+                            Debug.log "This should not happen" "!"
                     in
                     ( NotSelected, False )
 
@@ -65,7 +65,7 @@ update msg model =
                 _ ->
                     let
                         gag =
-                            Debug.log "This case should not happen basically" "!"
+                            Debug.log "This should not happen" "!"
                     in
                     ( NotSelected, False )
 

@@ -60,10 +60,12 @@ decodeBranches encoded =
         Ok branches ->
             ( Just branches, Dashboard.Branches branches )
 
-        Err _ ->
+        Err message ->
             let
                 log =
-                    Debug.log "There is no branches in LocalStorage" ""
+                    Debug.log
+                        "There is no branches in LocalStorage"
+                        message
             in
             ( Nothing, Dashboard.Empty )
 

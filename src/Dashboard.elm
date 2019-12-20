@@ -3,7 +3,6 @@ module Dashboard exposing (Model(..), Msg(..), view)
 import Bootstrap.Button as Button
 import Bootstrap.Utilities.Spacing as Spacing
 import Branch
-import Debug
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
 import Html exposing (..)
