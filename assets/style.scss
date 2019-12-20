@@ -2,6 +2,10 @@
   @import 'tree-view.css'
 }
 
-:not(.tree) {
+.pure-form {
+  @import 'pure-min.css'
+}
+
+:not(.tree):not(.pure-form) {
   @import url("https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css");
 }

@@ -1,5 +1,8 @@
 @import url(tree-view.css);
+@import url(pure-min.css);
 @import url("https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css");
 .tree { }
 
-:not(.tree) { }
+.pure-form { }
+
+:not(.tree):not(.pure-form) { }
