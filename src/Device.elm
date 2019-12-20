@@ -309,12 +309,12 @@ updateSettings tabMsg model =
                     ( { model | device = device }, saveMe )
 
                 _ ->
-                    let
-                        log =
-                            Debug.log
-                                "Operation not permited"
-                                " !"
-                    in
+                    -- let
+                    --     log =
+                    --         Debug.log
+                    --             "Operation not permited"
+                    --             " !"
+                    -- in
                     ( model, False )
 
         ExchangeMsg exchangeMsg ->
@@ -335,12 +335,12 @@ updateSettings tabMsg model =
                     ( { model | device = device }, saveMe )
 
                 _ ->
-                    let
-                        log =
-                            Debug.log
-                                "Operation not permited"
-                                " !"
-                    in
+                    -- let
+                    --     log =
+                    --         Debug.log
+                    --             "Operation not permited"
+                    --             " !"
+                    -- in
                     ( model, False )
 
         CountersMsg countersMsg ->

@@ -61,12 +61,12 @@ decodeBranches encoded =
             ( Just branches, Dashboard.Branches branches )
 
         Err message ->
-            let
-                log =
-                    Debug.log
-                        "There is no branches in LocalStorage"
-                        message
-            in
+            -- let
+            --     log =
+            --         Debug.log
+            --             "There is no branches in LocalStorage"
+            --             message
+            -- in
             ( Nothing, Dashboard.Empty )
 
 
@@ -82,12 +82,12 @@ decodeDevices encoded =
             Just value
 
         Err message ->
-            let
-                log =
-                    Debug.log
-                        "There is no Devices in LocalStorage"
-                        message
-            in
+            -- let
+            --     log =
+            --         Debug.log
+            --             "There is no Devices in LocalStorage"
+            --             message
+            -- in
             Nothing
 
 

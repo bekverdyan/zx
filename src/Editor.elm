@@ -47,10 +47,10 @@ update msg model =
                     ( Branch updated, saveMe )
 
                 _ ->
-                    let
-                        gag =
-                            Debug.log "This should not happen" "!"
-                    in
+                    -- let
+                    --     gag =
+                    --         Debug.log "This should not happen" "!"
+                    -- in
                     ( NotSelected, False )
 
         DeviceMsg deviceMsg ->
@@ -63,10 +63,10 @@ update msg model =
                     ( Device updated, saveMe )
 
                 _ ->
-                    let
-                        gag =
-                            Debug.log "This should not happen" "!"
-                    in
+                    -- let
+                    --     gag =
+                    --         Debug.log "This should not happen" "!"
+                    -- in
                     ( NotSelected, False )
 
 
