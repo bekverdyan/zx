@@ -74,10 +74,10 @@ view : Model -> Html Msg
 view model =
     case model of
         NotSelected ->
-            h1 [] [ text "Initial" ]
+            div [ id "main" ] [ h1 [] [ text "Initial" ] ]
 
         NotFound ->
-            h1 [] [ text "Not found" ]
+            div [ id "main" ] [ h1 [] [ text "Not found" ] ]
 
         Branch branch ->
             Html.map BranchMsg <|

@@ -1,7 +1,5 @@
 module Dashboard exposing (Model(..), Msg(..), view)
 
-import Bootstrap.Button as Button
-import Bootstrap.Utilities.Spacing as Spacing
 import Branch
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
@@ -44,32 +42,34 @@ type Msg
 
 view : Model -> Html Msg
 view model =
-    let
-        content =
-            case model of
+    div [ id "menu" ]
+        [ div [ class "pure-menu" ]
+            [ a
+                [ class "pure-menu-heading"
+                , href "#"
+                ]
+                [ text "ZX" ]
+            , case model of
                 Empty ->
-                    text "You have no branches yet!"
+                    viewBranches Dict.empty
 
                 Branches branches ->
                     viewBranches branches
 
                 Error ->
-                    text "Failed to load branches!"
-    in
-    div []
-        [ content
-        , Button.button
-            [ Button.dark
-            , Button.attrs
-                [ Spacing.ml1, onClick NewBranch ]
+                    viewBranches Dict.empty
+            , button
+                [ class "pure-button button-warning"
+                , onClick NewBranch
+                ]
+                [ text "New Branch" ]
             ]
-            [ text "Create Branch" ]
         ]
 
 
 viewBranches : Branches -> Html Msg
 viewBranches branches =
-    ul [ class "tree" ] <|
+    ul [ class "pure-menu-list" ] <|
         List.map
             viewBranchWithCmd
             (Dict.values branches)

@@ -1,10 +1,5 @@
 port module Main exposing (Model, init, main)
 
-import Bootstrap.Button as Button
-import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
-import Bootstrap.Tab as Tab
-import Bootstrap.Utilities.Spacing as Spacing
 import Branch
 import Branch.Shortcut as BranchShortcut
 import Browser
@@ -699,17 +694,17 @@ view : Model -> Document Msg
 view model =
     { title = "Դատարկ մարդ"
     , body =
-        [ Grid.container []
-            [ Grid.row []
-                [ Grid.col [ Col.xs12, Col.mdAuto ]
-                    [ Html.map DashboardMsg <|
-                        Dashboard.view model.dashboard
-                    ]
-                , Grid.col []
-                    [ Html.map EditorMsg <|
-                        Editor.view model.editor
-                    ]
+        [ div [ id "layout" ]
+            [ a
+                [ href "#menu"
+                , id "menuLink"
+                , class "menu-link"
                 ]
+                [ span [] [] ]
+            , Html.map DashboardMsg <|
+                Dashboard.view model.dashboard
+            , Html.map EditorMsg <|
+                Editor.view model.editor
             ]
         ]
     }
