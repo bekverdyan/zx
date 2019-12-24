@@ -154,7 +154,7 @@ viewNewBranchButton : Html Msg
 viewNewBranchButton =
     li [ class "pure-menu-item" ]
         [ a
-            [ class "pure-menu-link button-primary"
+            [ class "pure-menu-link label-error"
             , href "#"
             , onClick NewBranch
             ]
