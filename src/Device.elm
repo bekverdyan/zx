@@ -401,27 +401,116 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Card.config []
-        |> Card.header [ class "text-center" ]
-            [ h3 [ Spacing.mt2 ]
-                [ case model.mode of
-                    Normal ->
-                        viewNameNormalMode model.device.name
+    div [ id "main" ]
+        [ div [ class "header" ]
+            [ case model.mode of
+                NameEdit editable ->
+                    viewNameEditMode editable
 
-                    NameEdit editable ->
-                        viewNameEditMode editable
-                ]
+                _ ->
+                    viewNameNormalMode model.device.name
             ]
-        |> Card.block []
-            [ Block.titleH4 [] [ viewCommon model ]
-            , Block.text []
-                [ viewSettings model ]
+        , div [ class "content" ]
+            [ viewControlPanel model ]
+        ]
+
+
+viewControlPanel : Model -> Html Msg
+viewControlPanel model =
+    Html.form [ class "pure-form pure-form-stacked" ]
+        [ fieldset []
+            [ legend [] [ viewCommon model ]
+            , label [] [ text "Այստեղ կարող է լինել ձեր գովազդը" ]
             ]
-        |> Card.view
+        ]
 
 
 viewCommon : Model -> Html Msg
 viewCommon model =
+    let
+        ( deviceModel, version, softVersion ) =
+            model.device.info
+
+        container =
+            model.device.branch
+
+        textView : String -> String
+        textView value =
+            if String.isEmpty value then
+                "NotSet"
+
+            else
+                value
+    in
+    div []
+        [ div [ class "pure-g" ]
+            [ div [ class "pure-u-1-2" ]
+                [ Html.form
+                    [ class "pure-form" ]
+                    [ fieldset []
+                        [ span
+                            [ class "pure-form-message-inline" ]
+                            [ text "Click to open" ]
+                        , label
+                            [ for "container"
+                            , onClick <|
+                                GoToContainer container.id
+                            ]
+                            [ text container.name ]
+                        ]
+                    ]
+                ]
+            , div [ class "pure-u-1-2" ]
+                [ Html.form
+                    [ class "pure-form" ]
+                    [ fieldset []
+                        [ span
+                            [ class "pure-form-message-inline" ]
+                            [ text "Model" ]
+                        , label
+                            [ for "deviceModel" ]
+                            [ text <| textView deviceModel
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        , div
+            [ class "pure-g" ]
+            [ div [ class "pure-u-1-2" ]
+                [ Html.form
+                    [ class "pure-form" ]
+                    [ fieldset []
+                        [ span
+                            [ class "pure-form-message-inline" ]
+                            [ text "Version" ]
+                        , label
+                            [ for "version" ]
+                            [ text <| textView version
+                            ]
+                        ]
+                    ]
+                ]
+            , div [ class "pure-u-1-2" ]
+                [ Html.form
+                    [ class "pure-form" ]
+                    [ fieldset []
+                        [ span
+                            [ class "pure-form-message-inline" ]
+                            [ text "Soft version" ]
+                        , label
+                            [ for "softVersion" ]
+                            [ text <| textView softVersion
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+
+viewCommonOrig : Model -> Html Msg
+viewCommonOrig model =
     let
         ( deviceModel, version, softVersion ) =
             model.device.info
@@ -471,41 +560,46 @@ viewCommon model =
 
 viewNameNormalMode : String -> Html Msg
 viewNameNormalMode name =
-    div []
-        [ h3 []
-            [ Badge.badgeLight
-                [ Spacing.ml1
-                , onClick NameEditMode
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ h2 []
+                [ label
+                    [ for "branchName"
+                    , onClick NameEditMode
+                    ]
+                    [ text name ]
                 ]
-                [ text name ]
+            , span
+                [ class "pure-form-message-inline" ]
+                [ text "Click to edit" ]
             ]
         ]
 
 
 viewNameEditMode : String -> Html Msg
 viewNameEditMode editable =
-    div []
-        [ Alert.simpleWarning []
-            [ InputGroup.config
-                (InputGroup.text
-                    [ Input.id "nameInput"
-                    , Input.onInput NameInput
-                    , Input.value editable
-                    ]
-                )
-                |> InputGroup.successors
-                    [ InputGroup.button
-                        [ Button.success
-                        , Button.onClick <| SetName editable
-                        ]
-                        [ text "Save" ]
-                    , InputGroup.button
-                        [ Button.warning
-                        , Button.onClick NormalMode
-                        ]
-                        [ text "Cancel" ]
-                    ]
-                |> InputGroup.view
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "deviceName"
+                , placeholder "Device name"
+                , onInput NameInput
+                , value editable
+                ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SetName editable
+                ]
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
             ]
         ]
 
