@@ -211,6 +211,7 @@ viewInDashboard openBranchCmd branch shortcuts =
             , onClick openBranchCmd
             ]
             [ text branch.name ]
+        , shortcuts
         ]
 
 

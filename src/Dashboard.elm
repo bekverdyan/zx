@@ -90,7 +90,7 @@ viewBranchWithCmd branch =
     Branch.viewInDashboard
         (SelectBranch branch.id)
         branch
-        (ul [] <|
+        (div [] <|
             List.map viewDeviceShortcutWithCmd <|
                 Dict.values branch.shortcuts
         )

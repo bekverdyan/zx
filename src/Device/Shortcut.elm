@@ -1,9 +1,5 @@
 module Device.Shortcut exposing (Identifier, Shortcut, decoder, encode, view)
 
--- import Bootstrap.Button as Button
--- import Bootstrap.ListGroup as ListGroup
--- import Bootstrap.Utilities.Spacing as Spacing
-
 import Dict
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -68,15 +64,15 @@ idToString id =
 
 view : msg -> Shortcut -> Html msg
 view openDeviceCmd shortcut =
-    li [ id shortcut.id ]
-        [ a [ onClick openDeviceCmd ]
-            [ label [ attribute "for" shortcut.id ] [ text shortcut.name ]
-            , input
-                [ attribute "checked" ""
-                , attribute "id" shortcut.id
-                , attribute "value" ""
-                , attribute "type" "checkbox"
+    div [ class "pure-g" ]
+        [ div [ class "pure-u-1-24 label-warning" ]
+            [ text "" ]
+        , div [ class "pure-u-23-24" ]
+            [ a
+                [ class "pure-menu-link"
+                , href "#"
+                , onClick openDeviceCmd
                 ]
-                []
+                [ text shortcut.name ]
             ]
         ]
