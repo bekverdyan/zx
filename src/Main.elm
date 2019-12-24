@@ -53,7 +53,14 @@ decodeBranches encoded =
     in
     case D.decodeValue decoder encoded of
         Ok branches ->
-            ( Just branches, Dashboard.Branches branches )
+            let
+                dashboard =
+                    Dashboard.Branches <|
+                        Dict.map
+                            Dashboard.initBranchView
+                            branches
+            in
+            ( Just branches, dashboard )
 
         Err message ->
             -- let
@@ -229,12 +236,26 @@ update msg model =
 
         GenerateBranch salt ->
             let
-                branches =
+                ( branch, branches ) =
                     handleBranchGeneration salt model.branches
+
+                editor =
+                    Editor.Branch
+                        { branch = branch
+                        , mode = Branch.Normal
+                        }
+
+                dashboard =
+                    Dashboard.Branches <|
+                        Dashboard.toggleById branch.id <|
+                            Dict.map
+                                Dashboard.initBranchView
+                                branches
             in
             ( { model
                 | branches = Just branches
-                , dashboard = Dashboard.Branches branches
+                , dashboard = dashboard
+                , editor = editor
               }
             , pushBranches <| Just branches
             )
@@ -321,24 +342,7 @@ update msg model =
                     ( model, requestBranchGeneration )
 
                 Dashboard.SelectBranch id ->
-                    let
-                        editor =
-                            case model.branches of
-                                Just branches ->
-                                    case Dict.get id branches of
-                                        Just branch ->
-                                            Editor.Branch
-                                                { branch = branch
-                                                , mode = Branch.Normal
-                                                }
-
-                                        Nothing ->
-                                            Editor.NotFound
-
-                                Nothing ->
-                                    Editor.NotFound
-                    in
-                    ( { model | editor = editor }, Cmd.none )
+                    handleBranchSelection id model
 
                 Dashboard.SelectDevice id ->
                     let
@@ -358,6 +362,44 @@ update msg model =
                                     Editor.NotFound
                     in
                     ( { model | editor = editor }, Cmd.none )
+
+
+handleBranchSelection :
+    Branch.Identifier
+    -> Model
+    -> ( Model, Cmd Msg )
+handleBranchSelection id model =
+    let
+        ( dashboard, editor ) =
+            case model.branches of
+                Just branches ->
+                    case Dict.get id branches of
+                        Just branch ->
+                            let
+                                branchViews =
+                                    Dict.map
+                                        Dashboard.initBranchView
+                                        branches
+                            in
+                            ( Dashboard.Branches <|
+                                Dashboard.toggleById
+                                    id
+                                    branchViews
+                            , Editor.Branch
+                                { branch = branch
+                                , mode = Branch.Normal
+                                }
+                            )
+
+                        Nothing ->
+                            ( model.dashboard, Editor.NotFound )
+
+                Nothing ->
+                    ( model.dashboard, Editor.NotFound )
+    in
+    ( { model | editor = editor, dashboard = dashboard }
+    , Cmd.none
+    )
 
 
 mapDevices : String -> Device -> BranchShortcut.Shortcut -> Device
@@ -441,11 +483,17 @@ saveStuff stuff model =
                             updateBranchRefs
                                 viewModel.branch
                                 model.devices
+
+                        dashboard =
+                            Dashboard.Branches <|
+                                Dict.map
+                                    Dashboard.initBranchView
+                                    updated
                     in
                     ( { model
                         | branches = Just updated
                         , devices = devices
-                        , dashboard = Dashboard.Branches updated
+                        , dashboard = dashboard
                       }
                     , Cmd.batch
                         [ pushBranches <| Just updated
@@ -459,10 +507,16 @@ saveStuff stuff model =
                             Dict.singleton
                                 viewModel.branch.id
                                 viewModel.branch
+
+                        branchView =
+                            Dict.map
+                                Dashboard.initBranchView
+                                new
                     in
                     ( { model
                         | branches = Just new
-                        , dashboard = Dashboard.Branches new
+                        , dashboard =
+                            Dashboard.Branches branchView
                       }
                     , pushBranches <| Just new
                     )
@@ -483,10 +537,19 @@ saveStuff stuff model =
                                 viewModel.device
                                 model.branches
 
+                        containerId =
+                            viewModel.device.branch.id
+
                         dashboard =
                             case updatedBranches of
                                 Just values ->
-                                    Dashboard.Branches values
+                                    Dashboard.Branches <|
+                                        Dashboard.toggleById
+                                            containerId
+                                        <|
+                                            Dict.map
+                                                Dashboard.initBranchView
+                                                values
 
                                 Nothing ->
                                     Dashboard.Empty
@@ -518,7 +581,10 @@ saveStuff stuff model =
                         dashboard =
                             case updatedBranches of
                                 Just values ->
-                                    Dashboard.Branches values
+                                    Dashboard.Branches <|
+                                        Dict.map
+                                            Dashboard.initBranchView
+                                            values
 
                                 Nothing ->
                                     Dashboard.Empty
@@ -630,16 +696,26 @@ addDevice device branch model =
 
                 Nothing ->
                     Dict.singleton device.id device
+
+        branchesView =
+            Dict.map Dashboard.initBranchView updatedBranches
     in
     { model
         | devices = Just updatedDevices
         , branches = Just updatedBranches
         , editor = Editor.Device <| Device.init device
-        , dashboard = Dashboard.Branches updatedBranches
+        , dashboard =
+            Dashboard.Branches <|
+                Dashboard.toggleById
+                    branch.id
+                    branchesView
     }
 
 
-handleBranchGeneration : String -> Maybe Branches -> Branches
+handleBranchGeneration :
+    String
+    -> Maybe Branches
+    -> ( Branch, Branches )
 handleBranchGeneration salt dashboard =
     let
         branch =
@@ -647,15 +723,19 @@ handleBranchGeneration salt dashboard =
     in
     case dashboard of
         Just value ->
-            Dict.insert
+            ( branch
+            , Dict.insert
                 branch.id
                 branch
                 value
+            )
 
         Nothing ->
-            Dict.singleton
+            ( branch
+            , Dict.singleton
                 branch.id
                 branch
+            )
 
 
 
