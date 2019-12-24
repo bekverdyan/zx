@@ -44,6 +44,7 @@ type Mode
       -- VARIABLES
     | EditCoinNominal String
     | EditHopperCoinNominal String
+    | EditBillNominal Int
     | EditCardPrice String
     | EditDeviceId String
     | EditServerCode String
@@ -173,7 +174,7 @@ newVariables : Variables
 newVariables =
     { coinNominal = 0
     , hopperCoinNominal = 0
-    , billNominal = Array.initialize 10 (\n -> 0)
+    , billNominal = Array.repeat 10 0
     , cardPrice = 0
     , deviceId = ""
     , serverCode = ""
@@ -597,6 +598,10 @@ type Msg
     | EditHopperCoinNominalMode
     | InputHopperCoinNominal String
     | SaveHopperCoinNominal String
+      --Bill nominal
+    | EditModeBillNominal
+    | InputBillNominal Int
+    | SaveBillNominal Int
       --Card price
     | EditCardPriceMode
     | InputCardPrice String
@@ -745,6 +750,15 @@ update msg model =
               }
             , False
             )
+
+        EditModeBillNominal ->
+            ( { model | mode = EditBillNominal 0 }, False )
+
+        InputBillNominal editable ->
+            ( { model | mode = EditBillNominal editable }, False )
+
+        SaveBillNominal nominal ->
+            ( { model | mode = Normal }, True )
 
         EditCardPriceMode ->
             let
@@ -1311,8 +1325,7 @@ viewBillNominal nominal =
             [ Button.roleLink
             , Button.attrs
                 [ Spacing.ml1
-
-                -- , onClick EditHopperCoinNominalMode
+                , onClick EditModeBillNominal
                 ]
             ]
             [ h4 []
@@ -1369,6 +1382,104 @@ viewBillNominal nominal =
                             Array.get 9 nominal
                     ]
                 ]
+            ]
+        ]
+
+
+
+-- viewBillNominalEditMode : Array -> ListGroup.Item Msg
+-- viewBillNominalEditMode editable =
+--     ListGroup.li [ ListGroup.warning ]
+--         [ InputGroup.config
+--             (InputGroup.text
+--                 [ Input.id "hopperCoiNominalInput"
+--                 , Input.attrs [ Spacing.mAuto ]
+--                 , Input.placeholder "Hopper coin nominal"
+--                 , Input.onInput InputBillNominal
+--                 , Input.value editable
+--                 ]
+--             )
+--             |> InputGroup.successors
+--                 [ InputGroup.button
+--                     [ Button.success
+--                     , Button.onClick <|
+--                         SaveBillNominal editable
+--                     ]
+--                     [ text "Save" ]
+--                 , InputGroup.button
+--                     [ Button.warning
+--                     , Button.onClick NormalMode
+--                     ]
+--                     [ text "Cancel" ]
+--                 ]
+--             |> InputGroup.view
+--         ]
+
+
+viewEditableBillNominal : Array -> Html Msg
+viewEditableBillNominal nominal =
+    form [ Attrs.class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ Attrs.type_ "number"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 0 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 1 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 2 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 3 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 6 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 5 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 6 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 7 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 8 nominal
+                ]
+                []
+            , input
+                [ Attrs.type_ "text"
+                , Attrs.size 1
+                , Attrs.value <| viewNominalMember <| Array.get 9 nominal
+                ]
+                []
             ]
         ]
 
@@ -2112,3 +2223,26 @@ viewNetworkEditMode faze =
 
 
 -- TODO mappers
+
+
+multiply : Int -> Int -> Int
+multiply index digit =
+    ((10 - index) * 10) * digit
+
+
+arrayToInt : Array -> Int
+arrayToInt array =
+    List.sum <|
+        Array.toList <|
+            Array.indexedMap
+                multiply
+                array
+
+
+intToArray : Int -> Array
+intToArray value =
+    if value < 10000000000 then
+        Array.repeat 10 0
+
+    else
+        Array.repeat 10 0
