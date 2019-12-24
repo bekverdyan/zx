@@ -58,21 +58,31 @@ view model =
 
                 Error ->
                     viewBranches Dict.empty
-            , button
-                [ class "pure-button button-warning"
-                , onClick NewBranch
-                ]
-                [ text "New Branch" ]
             ]
+        ]
+
+
+viewNewBranchButton : Html Msg
+viewNewBranchButton =
+    li [ class "pure-menu-item" ]
+        [ a
+            [ class "pure-menu-link button-primary"
+            , href "#"
+            , onClick NewBranch
+            ]
+            [ text "New Branch" ]
         ]
 
 
 viewBranches : Branches -> Html Msg
 viewBranches branches =
     ul [ class "pure-menu-list" ] <|
-        List.map
-            viewBranchWithCmd
-            (Dict.values branches)
+        List.append
+            (List.map
+                viewBranchWithCmd
+                (Dict.values branches)
+            )
+            [ viewNewBranchButton ]
 
 
 viewBranchWithCmd : Branch -> Html Msg
