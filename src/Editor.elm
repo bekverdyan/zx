@@ -47,10 +47,10 @@ update msg model =
                     ( Branch updated, saveMe )
 
                 _ ->
-                    let
-                        gag =
-                            Debug.log "This case should not happen basically" "!"
-                    in
+                    -- let
+                    --     gag =
+                    --         Debug.log "This should not happen" "!"
+                    -- in
                     ( NotSelected, False )
 
         DeviceMsg deviceMsg ->
@@ -63,10 +63,10 @@ update msg model =
                     ( Device updated, saveMe )
 
                 _ ->
-                    let
-                        gag =
-                            Debug.log "This case should not happen basically" "!"
-                    in
+                    -- let
+                    --     gag =
+                    --         Debug.log "This should not happen" "!"
+                    -- in
                     ( NotSelected, False )
 
 
@@ -74,10 +74,10 @@ view : Model -> Html Msg
 view model =
     case model of
         NotSelected ->
-            h1 [] [ text "Initial" ]
+            div [ id "main" ] [ h1 [] [ text "Initial" ] ]
 
         NotFound ->
-            h1 [] [ text "Not found" ]
+            div [ id "main" ] [ h1 [] [ text "Not found" ] ]
 
         Branch branch ->
             Html.map BranchMsg <|

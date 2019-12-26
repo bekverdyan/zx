@@ -1,9 +1,15 @@
-module Dashboard exposing (Model(..), Msg(..), view)
+module Dashboard exposing
+    ( BranchView
+    , Model(..)
+    , Msg(..)
+    , compact
+    , initBranchView
+    , toggleById
+    , view
+    )
 
-import Bootstrap.Button as Button
-import Bootstrap.Utilities.Spacing as Spacing
 import Branch
-import Debug
+import Branch.Shortcut as BranchShortcut
 import Device.Shortcut as DeviceShortcut
 import Dict exposing (Dict)
 import Html exposing (..)
@@ -18,11 +24,20 @@ type Model
 
 
 type alias Branches =
-    Dict Branch.Identifier Branch
+    Dict Branch.Identifier BranchView
+
+
+type BranchView
+    = Compact Branch
+    | Opened ( Branch, List DeviceShortcut )
 
 
 type alias Branch =
     Branch.Branch
+
+
+type alias BranchShortcut =
+    BranchShortcut.Shortcut
 
 
 type alias DeviceShortcut =
@@ -34,9 +49,79 @@ type alias DeviceShortcut =
 
 
 type Msg
-    = NewBranch
-    | SelectBranch Branch.Identifier
+    = SelectBranch Branch.Identifier
     | SelectDevice DeviceShortcut.Identifier
+    | NewBranch
+
+
+update : Msg -> Model -> ( Model, Bool )
+update msg model =
+    case msg of
+        SelectBranch id ->
+            case model of
+                Branches branches ->
+                    ( Branches <| toggleById id branches
+                    , False
+                    )
+
+                _ ->
+                    -- let
+                    --     log = Debug.log "This should not happen"
+                    --     "!"
+                    -- in
+                    ( model, False )
+
+        SelectDevice id ->
+            ( model, False )
+
+        NewBranch ->
+            ( model, False )
+
+
+
+-- MAP
+
+
+initBranchView : Branch.Identifier -> Branch -> BranchView
+initBranchView id branch =
+    Compact branch
+
+
+toggleById : Branch.Identifier -> Branches -> Branches
+toggleById id branches =
+    let
+        checkThenToggle :
+            Branch.Identifier
+            -> BranchView
+            -> BranchView
+        checkThenToggle idAtHand branchView =
+            if id == idAtHand then
+                toggle branchView
+
+            else
+                branchView
+    in
+    Dict.map checkThenToggle branches
+
+
+toggle : BranchView -> BranchView
+toggle model =
+    case model of
+        Compact branch ->
+            Opened ( branch, Dict.values branch.shortcuts )
+
+        Opened ( branch, shortcuts ) ->
+            Compact branch
+
+
+compact : Branch.Identifier -> BranchView -> BranchView
+compact id model =
+    case model of
+        Compact branch ->
+            Compact branch
+
+        Opened _ ->
+            toggle model
 
 
 
@@ -45,46 +130,67 @@ type Msg
 
 view : Model -> Html Msg
 view model =
-    let
-        content =
-            case model of
+    div [ id "menu" ]
+        [ div [ class "pure-menu" ]
+            [ a
+                [ class "pure-menu-heading"
+                , href "#"
+                ]
+                [ text "ZX" ]
+            , case model of
                 Empty ->
-                    text "You have no branches yet!"
+                    viewBranches Dict.empty
 
                 Branches branches ->
                     viewBranches branches
 
                 Error ->
-                    text "Failed to load branches!"
-    in
-    div []
-        [ content
-        , Button.button
-            [ Button.dark
-            , Button.attrs
-                [ Spacing.ml1, onClick NewBranch ]
+                    viewBranches Dict.empty
             ]
-            [ text "Create Branch" ]
+        ]
+
+
+viewNewBranchButton : Html Msg
+viewNewBranchButton =
+    li [ class "pure-menu-item" ]
+        [ a
+            [ class "pure-menu-link label-error"
+            , href "#"
+            , onClick NewBranch
+            ]
+            [ text "New Branch" ]
         ]
 
 
 viewBranches : Branches -> Html Msg
 viewBranches branches =
-    ul [ class "tree" ] <|
-        List.map
-            viewBranchWithCmd
-            (Dict.values branches)
+    ul [ class "pure-menu-list" ] <|
+        List.append
+            (List.map
+                viewBranchWithCmd
+                (Dict.values branches)
+            )
+            [ viewNewBranchButton ]
 
 
-viewBranchWithCmd : Branch -> Html Msg
-viewBranchWithCmd branch =
-    Branch.viewInDashboard
-        (SelectBranch branch.id)
-        branch
-        (ul [] <|
-            List.map viewDeviceShortcutWithCmd <|
-                Dict.values branch.shortcuts
-        )
+viewBranchWithCmd : BranchView -> Html Msg
+viewBranchWithCmd model =
+    case model of
+        Compact branch ->
+            BranchShortcut.viewCompact
+                (SelectBranch branch.id)
+            <|
+                Branch.createShortcut branch
+
+        Opened ( branch, shortcuts ) ->
+            BranchShortcut.viewOpened
+                (SelectBranch branch.id)
+                (Branch.createShortcut branch)
+                (div [] <|
+                    List.map
+                        viewDeviceShortcutWithCmd
+                        shortcuts
+                )
 
 
 viewDeviceShortcutWithCmd : DeviceShortcut -> Html Msg

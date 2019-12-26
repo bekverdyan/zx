@@ -1,8 +1,6 @@
 module Device exposing
     ( Device
-    ,  Identifier
-       -- , Mode(..)
-
+    , Identifier
     , Model
     , Msg(..)
     , Type(..)
@@ -16,16 +14,6 @@ module Device exposing
     , view
     )
 
-import Bootstrap.Alert as Alert
-import Bootstrap.Badge as Badge
-import Bootstrap.Button as Button
-import Bootstrap.Card as Card
-import Bootstrap.Card.Block as Block
-import Bootstrap.Form.Input as Input
-import Bootstrap.Form.InputGroup as InputGroup
-import Bootstrap.ListGroup as ListGroup
-import Bootstrap.Tab as Tab
-import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Debug
@@ -42,14 +30,19 @@ import Json.Encode as E
 
 type alias Model =
     { device : Device
-    , tabState : Tab.State
     , mode : Mode
+    , controlPanel : ControlPanel
     }
 
 
 type Mode
     = Normal
     | NameEdit String
+
+
+type ControlPanel
+    = Settings Settings
+    | Counters Counter.Model
 
 
 type alias BranchShortcut =
@@ -119,15 +112,7 @@ idToString id =
 
 init : Device -> Model
 init device =
-    Model device Tab.initialState Normal
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Tab.subscriptions model.tabState
-        (SettingsMsg
-            << TabStateMsg
-        )
+    Model device Normal (Settings device.settings)
 
 
 
@@ -280,15 +265,17 @@ type TabMsg
     = WashBoxMsg Channel.Msg
     | ExchangeMsg Config.Msg
     | CountersMsg Counter.Msg
-    | TabStateMsg Tab.State
+    | ToSettings
+    | ToCounters
 
 
 updateSettings : TabMsg -> Model -> ( Model, Bool )
 updateSettings tabMsg model =
+    let
+        deviceOrig =
+            model.device
+    in
     case tabMsg of
-        TabStateMsg state ->
-            ( { model | tabState = state }, False )
-
         WashBoxMsg channelMsg ->
             case model.device.settings of
                 Channels channelsOrig ->
@@ -298,23 +285,25 @@ updateSettings tabMsg model =
                                 channelMsg
                                 channelsOrig
 
-                        deviceOrig =
-                            model.device
-
                         device =
                             { deviceOrig
                                 | settings = Channels channels
                             }
                     in
-                    ( { model | device = device }, saveMe )
+                    ( { model
+                        | device = device
+                        , controlPanel = Settings device.settings
+                      }
+                    , saveMe
+                    )
 
                 _ ->
-                    let
-                        log =
-                            Debug.log
-                                "Operation not permited"
-                                " !"
-                    in
+                    -- let
+                    --     log =
+                    --         Debug.log
+                    --             "Operation not permited"
+                    --             " !"
+                    -- in
                     ( model, False )
 
         ExchangeMsg exchangeMsg ->
@@ -324,23 +313,25 @@ updateSettings tabMsg model =
                         ( configs, saveMe ) =
                             Config.update exchangeMsg configsOrig
 
-                        deviceOrig =
-                            model.device
-
                         device =
                             { deviceOrig
                                 | settings = Configs configs
                             }
                     in
-                    ( { model | device = device }, saveMe )
+                    ( { model
+                        | device = device
+                        , controlPanel = Settings device.settings
+                      }
+                    , saveMe
+                    )
 
                 _ ->
-                    let
-                        log =
-                            Debug.log
-                                "Operation not permited"
-                                " !"
-                    in
+                    -- let
+                    --     log =
+                    --         Debug.log
+                    --             "Operation not permited"
+                    --             " !"
+                    -- in
                     ( model, False )
 
         CountersMsg countersMsg ->
@@ -350,13 +341,26 @@ updateSettings tabMsg model =
                         countersMsg
                         model.device.counters
 
-                deviceOrig =
-                    model.device
-
                 device =
                     { deviceOrig | counters = counters }
             in
             ( { model | device = device }, saveMe )
+
+        ToSettings ->
+            ( { model
+                | controlPanel = Settings deviceOrig.settings
+                , mode = Normal
+              }
+            , False
+            )
+
+        ToCounters ->
+            ( { model
+                | controlPanel = Counters deviceOrig.counters
+                , mode = Normal
+              }
+            , False
+            )
 
 
 update : Msg -> Model -> ( Model, Bool )
@@ -401,27 +405,24 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Card.config []
-        |> Card.header [ class "text-center" ]
-            [ h3 [ Spacing.mt2 ]
-                [ case model.mode of
-                    Normal ->
-                        viewNameNormalMode model.device.name
+    div [ id "main" ]
+        [ div [ class "header" ]
+            [ case model.mode of
+                NameEdit editable ->
+                    viewNameEditMode editable
 
-                    NameEdit editable ->
-                        viewNameEditMode editable
-                ]
+                _ ->
+                    viewNameNormalMode model.device.name
             ]
-        |> Card.block []
-            [ Block.titleH4 [] [ viewCommon model ]
-            , Block.text []
-                [ viewSettings model ]
+        , div [ class "content" ]
+            [ viewContainerAndInfo model
+            , viewControlPanel model.controlPanel
             ]
-        |> Card.view
+        ]
 
 
-viewCommon : Model -> Html Msg
-viewCommon model =
+viewContainerAndInfo : Model -> Html Msg
+viewContainerAndInfo model =
     let
         ( deviceModel, version, softVersion ) =
             model.device.info
@@ -437,133 +438,171 @@ viewCommon model =
             else
                 value
     in
-    div []
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick <| GoToContainer container.id
+    Html.form [ class "pure-form pure-form-stacked" ]
+        [ fieldset []
+            [ div [ class "pure-g" ]
+                [ div [ class "pure-u-1 pure-u-md-1-4" ]
+                    [ label
+                        [ for "container"
+                        , class "pure-u-23-24"
+                        , onClick <|
+                            GoToContainer container.id
+                        ]
+                        [ text container.name ]
+                    ]
+
+                -- , div [ class "pure-u-1 pure-u-md-1-4" ]
+                --     [ label
+                --         [ for "deviceModel"
+                --         , class "pure-u-23-24"
+                --         ]
+                --         [ text <|
+                --             textView deviceModel
+                --         ]
+                --     ]
+                -- , div [ class "pure-u-1 pure-u-md-1-4" ]
+                --     [ label
+                --         [ for "version"
+                --         , class "pure-u-23-24"
+                --         ]
+                --         [ text <|
+                --             textView version
+                --         ]
+                --     ]
+                -- , div [ class "pure-u-1 pure-u-md-1-4" ]
+                --     [ label
+                --         [ for "softVersion"
+                --         , class "pure-u-23-24"
+                --         ]
+                --         [ text <|
+                --             textView softVersion
+                --         ]
+                --     ]
                 ]
-            ]
-            [ h4 []
-                [ text "Container: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| container.name ]
-                ]
-            ]
-        , h4 []
-            [ text "Model: "
-            , Badge.pillDanger [ Spacing.ml1 ]
-                [ text <| textView deviceModel ]
-            ]
-        , h4 []
-            [ text "Version: "
-            , Badge.pillDanger [ Spacing.ml1 ]
-                [ text <| textView version ]
-            ]
-        , h4 []
-            [ text "Soft version: "
-            , Badge.pillDanger [ Spacing.ml1 ]
-                [ text <| textView softVersion ]
             ]
         ]
 
 
 viewNameNormalMode : String -> Html Msg
 viewNameNormalMode name =
-    div []
-        [ h3 []
-            [ Badge.badgeLight
-                [ Spacing.ml1
-                , onClick NameEditMode
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ h2 []
+                [ label
+                    [ for "branchName"
+                    , onClick NameEditMode
+                    ]
+                    [ text name ]
                 ]
-                [ text name ]
+            , span
+                [ class "pure-form-message-inline" ]
+                [ text "Click to edit" ]
             ]
         ]
 
 
 viewNameEditMode : String -> Html Msg
 viewNameEditMode editable =
-    div []
-        [ Alert.simpleWarning []
-            [ InputGroup.config
-                (InputGroup.text
-                    [ Input.id "nameInput"
-                    , Input.onInput NameInput
-                    , Input.value editable
-                    ]
-                )
-                |> InputGroup.successors
-                    [ InputGroup.button
-                        [ Button.success
-                        , Button.onClick <| SetName editable
-                        ]
-                        [ text "Save" ]
-                    , InputGroup.button
-                        [ Button.warning
-                        , Button.onClick NormalMode
-                        ]
-                        [ text "Cancel" ]
-                    ]
-                |> InputGroup.view
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "deviceName"
+                , placeholder "Device name"
+                , onInput NameInput
+                , value editable
+                ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SetName editable
+                ]
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
             ]
         ]
 
 
-viewSettings : Model -> Html Msg
-viewSettings model =
-    let
-        settingsView =
-            case model.device.settings of
-                Channels channels ->
-                    Html.map
-                        (SettingsMsg
-                            << WashBoxMsg
-                        )
-                    <|
-                        Channel.view channels
-
-                Configs parameters ->
-                    Html.map
-                        (SettingsMsg
-                            << ExchangeMsg
-                        )
-                    <|
-                        Config.view parameters
-
-        countersView =
-            Html.map
-                (SettingsMsg
-                    << CountersMsg
-                )
-            <|
-                Counter.view model.device.counters
-    in
-    Tab.config
-        (SettingsMsg
-            << TabStateMsg
-        )
-        |> Tab.items
-            [ Tab.item
-                { id = "settings"
-                , link = Tab.link [] [ text "Settings" ]
-                , pane =
-                    Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "" ]
-                        , p [] [ settingsView ]
+viewControlPanel : ControlPanel -> Html Msg
+viewControlPanel model =
+    case model of
+        Settings settings ->
+            div []
+                [ div [ class "pure-menu pure-menu-horizontal" ]
+                    [ ul [ class "pure-menu-list" ]
+                        [ li [ class "pure-menu-item" ]
+                            [ a
+                                [ href "#"
+                                , class <|
+                                    "pure-menu-link"
+                                        ++ " pure-menu-selected"
+                                , onClick <| SettingsMsg ToSettings
+                                ]
+                                [ text "Settings" ]
+                            ]
+                        , li [ class "pure-menu-item" ]
+                            [ a
+                                [ href "#"
+                                , class "pure-menu-link"
+                                , onClick <| SettingsMsg ToCounters
+                                ]
+                                [ text "Counters" ]
+                            ]
                         ]
-                }
-            , Tab.item
-                { id = "counters"
-                , link = Tab.link [] [ text "Counters" ]
-                , pane =
-                    Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "" ]
-                        , p [] [ countersView ]
+                    ]
+                , case settings of
+                    Channels channels ->
+                        Html.map
+                            (SettingsMsg
+                                << WashBoxMsg
+                            )
+                        <|
+                            Channel.view channels
+
+                    Configs parameters ->
+                        Html.map
+                            (SettingsMsg
+                                << ExchangeMsg
+                            )
+                        <|
+                            Config.view parameters
+                ]
+
+        Counters counters ->
+            div []
+                [ div [ class "pure-menu pure-menu-horizontal" ]
+                    [ ul [ class "pure-menu-list" ]
+                        [ li [ class "pure-menu-item" ]
+                            [ a
+                                [ href "#"
+                                , class "pure-menu-link"
+                                , onClick <| SettingsMsg ToSettings
+                                ]
+                                [ text "Settings" ]
+                            ]
+                        , li [ class "pure-menu-item" ]
+                            [ a
+                                [ href "#"
+                                , class "pure-menu-link pure-menu-selected"
+                                , onClick <| SettingsMsg ToCounters
+                                ]
+                                [ text "Counters" ]
+                            ]
                         ]
-                }
-            ]
-        |> Tab.view model.tabState
+                    ]
+                , Html.map
+                    (SettingsMsg
+                        << CountersMsg
+                    )
+                  <|
+                    Counter.view counters
+                ]
 
 
 

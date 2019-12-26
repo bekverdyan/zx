@@ -1,15 +1,5 @@
 module Branch exposing (Branch, Identifier, Mode(..), Model, Msg(..), createShortcut, decoder, encode, idToString, newBranch, update, view, viewInDashboard)
 
-import Bootstrap.Alert as Alert
-import Bootstrap.Button as Button
-import Bootstrap.ButtonGroup as ButtonGroup
-import Bootstrap.Card as Card
-import Bootstrap.Card.Block as Block
-import Bootstrap.Form.Input as Input
-import Bootstrap.Form.InputGroup as InputGroup
-import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
-import Bootstrap.Utilities.Spacing as Spacing
 import Branch.Shortcut as BranchShortcut
 import Crypto.Hash as Hash
 import Device.Shortcut as DeviceShortcut
@@ -199,89 +189,88 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Card.config []
-        |> Card.headerH3 []
+    div [ id "main" ]
+        [ div [ class "header" ]
             [ case model.mode of
-                Normal ->
-                    viewNormalModeName model.branch.name
-
                 NameEdit editable ->
                     viewNameEditMode editable
+
+                _ ->
+                    viewNameNormalMode model.branch.name
             ]
-        |> Card.block []
-            [ Block.titleH3 []
-                [ text "Some stuff" ]
-            , Block.text [] [ text "" ]
-            , Block.custom <|
-                Button.button
-                    [ Button.primary
-                    , Button.attrs
-                        [ onClick <|
-                            NewDevice model.branch
-                        ]
-                    ]
-                    [ text "New Device" ]
-            ]
-        |> Card.footer [] [ text "" ]
-        |> Card.view
+        , div [ class "content" ] [ viewControlPanel model ]
+        ]
 
 
-viewNormalModeName : String -> Html Msg
-viewNormalModeName name =
-    div []
-        [ Alert.simpleSecondary []
-            [ text name
-            , Button.button
-                [ Button.dark
-                , Button.attrs
-                    [ Spacing.ml1
+viewInDashboard : msg -> Branch -> Html msg -> Html msg
+viewInDashboard openBranchCmd branch shortcuts =
+    li [ class "pure-menu-item" ]
+        [ a
+            [ class "pure-menu-link"
+            , href "#"
+            , onClick openBranchCmd
+            ]
+            [ text branch.name ]
+        , shortcuts
+        ]
+
+
+viewNameNormalMode : String -> Html Msg
+viewNameNormalMode name =
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ h2 []
+                [ label
+                    [ for "branchName"
                     , onClick NameEditMode
                     ]
+                    [ text name ]
                 ]
-                [ text "Edit" ]
+            , span
+                [ class "pure-form-message-inline" ]
+                [ text "Click to edit" ]
             ]
         ]
 
 
 viewNameEditMode : String -> Html Msg
 viewNameEditMode editable =
-    div []
-        [ Alert.simpleWarning []
-            [ InputGroup.config
-                (InputGroup.text
-                    [ Input.id "nameInput"
-                    , Input.onInput NameInput
-                    , Input.value editable
-                    ]
-                )
-                |> InputGroup.successors
-                    [ InputGroup.button
-                        [ Button.success
-                        , Button.onClick <| SetName editable
-                        ]
-                        [ text "Save" ]
-                    , InputGroup.button
-                        [ Button.warning
-                        , Button.onClick NormalMode
-                        ]
-                        [ text "Cancel" ]
-                    ]
-                |> InputGroup.view
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "branchName"
+                , placeholder "Branch name"
+                , onInput NameInput
+                , value editable
+                ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SetName editable
+                ]
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
             ]
         ]
 
 
-viewInDashboard : msg -> Branch -> Html msg -> Html msg
-viewInDashboard openBranchCmd branch shortcuts =
-    li [ id branch.id ]
-        [ label [ attribute "for" branch.id ]
-            [ a [ onClick openBranchCmd ] [ text branch.name ] ]
-        , input
-            [ attribute "checked" ""
-            , attribute "id" branch.id
-            , attribute "value" ""
-            , attribute "type" "checkbox"
+viewControlPanel : Model -> Html Msg
+viewControlPanel model =
+    Html.form [ class "pure-form pure-form-stacked" ]
+        [ fieldset []
+            [ legend [] [ text "Control panel" ]
+            , label [] [ text "Այստեղ կարող է լինել ձեր գովազդը" ]
+            , button
+                [ class "pure-button button-warning"
+                , onClick <| NewDevice model.branch
+                ]
+                [ text "New Device" ]
             ]
-            []
-        , shortcuts
         ]
