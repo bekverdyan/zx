@@ -9,21 +9,9 @@ module Device.Config exposing
     )
 
 import Array as Array
-import Bootstrap.Alert as Alert
-import Bootstrap.Badge as Badge
-import Bootstrap.Button as Button
-import Bootstrap.ButtonGroup as ButtonGroup
-import Bootstrap.Card as Card
-import Bootstrap.Form.Input as Input
-import Bootstrap.Form.InputGroup as InputGroup
-import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
-import Bootstrap.ListGroup as ListGroup
-import Bootstrap.Table as Table
-import Bootstrap.Utilities.Spacing as Spacing
 import Html exposing (..)
-import Html.Attributes as Attrs
+import Html.Attributes exposing (..)
+import Html.Attributes.Aria as Aria
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
@@ -1118,10 +1106,6 @@ update msg model =
             )
 
 
-
--- VIEW
-
-
 view : Model -> Html Msg
 view model =
     let
@@ -1131,72 +1115,55 @@ view model =
         switches =
             model.parameters.switches
     in
-    Grid.container []
-        [ Grid.row []
-            [ Grid.col []
-                [ Card.config []
-                    |> Card.listGroup
-                        [ viewCoinNominal
-                            variables.coinNominal
-                            model.mode
-                        , viewHopperCoinNominal
-                            variables.hopperCoinNominal
-                            model.mode
-                        , viewBillNominal
-                            variables.billNominal
-                        , viewCardPrice
-                            variables.cardPrice
-                            model.mode
-                        , viewDeviceId
-                            variables.deviceId
-                            model.mode
-                        , viewServerCode
-                            variables.serverCode
-                            model.mode
-                        , viewBonusPercent
-                            variables.bonusPercent
-                            model.mode
-                        , viewBonusThreshold
-                            variables.bonusThreshold
-                            model.mode
-                        ]
-                    |> Card.view
+    div [ class "l-content" ]
+        [ div [ class "pricing-tables pure-g" ]
+            [ div [ class "pure-u-1 pure-u-md-1-2" ]
+                [ div
+                    [ class "pricing-table pricing-table-free" ]
+                    [ div [ class "pricing-table-header" ] []
+                    , viewVariables variables model.mode
+                    ]
                 ]
-            , Grid.col []
-                [ Card.config []
-                    |> Card.listGroup
-                        [ viewHopper
-                            switches.hopper
-                            model.mode
-                        , viewHopperMode
-                            switches.hopperMode
-                            model.mode
-                        , viewBillValidator
-                            switches.billValidator
-                            model.mode
-                        , viewRfidReader1
-                            switches.rfidReader1
-                            model.mode
-                        , viewRfidReader2
-                            switches.rfidReader2
-                            model.mode
-                        , viewDispenser
-                            switches.dispenser
-                            model.mode
-                        , viewCardOut
-                            switches.cardOut
-                            model.mode
-                        , viewNetwork
-                            switches.network
-                            model.mode
-                        ]
-                    |> Card.view
+            , div [ class "pure-u-1 pure-u-md-1-2" ]
+                [ div
+                    [ class "pricing-table pricing-table-free" ]
+                    [ div [ class "pricing-table-header" ] []
+                    , viewSwitches switches model.mode
+                    ]
                 ]
             ]
         ]
 
 
-viewCoinNominal : Int -> Mode -> ListGroup.Item Msg
+viewVariables : Variables -> Mode -> Html Msg
+viewVariables variables mode =
+    ul [ class "pricing-table-list" ]
+        [ viewCoinNominal variables.coinNominal mode
+        , viewHopperCoinNominal variables.hopperCoinNominal mode
+        , viewBillNominal variables.billNominal
+        , viewCardPrice variables.cardPrice mode
+        , viewDeviceId variables.deviceId mode
+        , viewServerCode variables.serverCode mode
+        , viewBonusPercent variables.bonusPercent mode
+        , viewBonusThreshold variables.bonusThreshold mode
+        ]
+
+
+viewSwitches : Switches -> Mode -> Html Msg
+viewSwitches switches mode =
+    ul [ class "pricing-table-list" ]
+        [ viewHopper switches.hopper mode
+        , viewHopperMode switches.hopperMode mode
+        , viewBillValidator switches.billValidator mode
+        , viewRfidReader1 switches.rfidReader1 mode
+        , viewRfidReader2 switches.rfidReader2 mode
+        , viewDispenser switches.dispenser mode
+        , viewCardOut switches.cardOut mode
+        , viewNetwork switches.network mode
+        ]
+
+
+viewCoinNominal : Int -> Mode -> Html Msg
 viewCoinNominal nominal mode =
     case mode of
         EditCoinNominal editable ->
@@ -1207,57 +1174,45 @@ viewCoinNominal nominal mode =
                 nominal
 
 
-viewCoinNominalNormalMode : Int -> ListGroup.Item Msg
+viewCoinNominalNormalMode : Int -> Html Msg
 viewCoinNominalNormalMode nominal =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditCoinNominalMode
-                ]
-            ]
-            [ h4 []
-                [ text "Coin nominal: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        String.fromInt nominal
-                    ]
-                ]
+    li []
+        [ label [] [ text "Coin nominal: " ]
+        , label []
+            [ a [ onClick EditCoinNominalMode ]
+                [ text <| String.fromInt nominal ]
             ]
         ]
 
 
-viewCoinNominalEditMode : String -> ListGroup.Item Msg
+viewCoinNominalEditMode : String -> Html Msg
 viewCoinNominalEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "coiNominalInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.onInput InputCoinNominal
-                , Input.placeholder "Coin nominal"
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "coinNominal"
+                , placeholder "Coin nominal"
+                , onInput InputCoinNominal
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveCoinNominal editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveCoinNominal editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewHopperCoinNominal : Int -> Mode -> ListGroup.Item Msg
+viewHopperCoinNominal : Int -> Mode -> Html Msg
 viewHopperCoinNominal nominal mode =
     case mode of
         EditHopperCoinNominal editable ->
@@ -1268,128 +1223,63 @@ viewHopperCoinNominal nominal mode =
                 nominal
 
 
-viewHopperCoinNominalNormalMode : Int -> ListGroup.Item Msg
+viewHopperCoinNominalNormalMode : Int -> Html Msg
 viewHopperCoinNominalNormalMode nominal =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditHopperCoinNominalMode
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Hopper coin nominal: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| String.fromInt nominal
-                    ]
-                ]
+    li []
+        [ label [] [ text "Hoppen coin nominal: " ]
+        , label []
+            [ a [ onClick EditHopperCoinNominalMode ]
+                [ text <| String.fromInt nominal ]
             ]
         ]
 
 
-viewHopperCoinNominalEditMode : String -> ListGroup.Item Msg
+viewHopperCoinNominalEditMode : String -> Html Msg
 viewHopperCoinNominalEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "hopperCoiNominalInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.placeholder "Hopper coin nominal"
-                , Input.onInput InputHopperCoinNominal
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "hopperCoinNominal"
+                , placeholder "Hopper coin nominal"
+                , onInput InputHopperCoinNominal
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveHopperCoinNominal editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveHopperCoinNominal editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewBillNominal : Array -> ListGroup.Item Msg
+viewBillNominal : Array -> Html Msg
 viewBillNominal nominal =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeBillNominal
-                ]
-            ]
-            [ h4 []
+    li []
+        [ label [] [ text "Bill nominal: " ]
+        , label []
+            [ a [ onClick EditModeBillNominal ]
                 [ text <|
-                    "Bill nominal: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 0 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 1 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 2 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 3 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 4 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 5 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 6 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 7 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 8 nominal
-                    ]
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        viewNominalMember <|
-                            Array.get 9 nominal
-                    ]
+                    String.fromInt <|
+                        arrayToInt nominal
                 ]
             ]
         ]
 
 
 
--- viewBillNominalEditMode : Array -> ListGroup.Item Msg
+--
+-- viewBillNominalEditMode : Array -> Html Msg
 -- viewBillNominalEditMode editable =
---     ListGroup.li [ ListGroup.warning ]
+--     li []
 --         [ InputGroup.config
 --             (InputGroup.text
 --                 [ Input.id "hopperCoiNominalInput"
@@ -1418,66 +1308,66 @@ viewBillNominal nominal =
 
 viewEditableBillNominal : Array -> Html Msg
 viewEditableBillNominal nominal =
-    form [ Attrs.class "pure-form" ]
+    Html.form [ class "pure-form" ]
         [ fieldset []
             [ input
-                [ Attrs.type_ "number"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 0 nominal
+                [ type_ "number"
+                , size 1
+                , value <| viewNominalMember <| Array.get 0 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 1 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 1 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 2 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 2 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 3 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 3 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 6 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 6 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 5 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 5 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 6 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 6 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 7 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 7 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 8 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 8 nominal
                 ]
                 []
             , input
-                [ Attrs.type_ "text"
-                , Attrs.size 1
-                , Attrs.value <| viewNominalMember <| Array.get 9 nominal
+                [ type_ "text"
+                , size 1
+                , value <| viewNominalMember <| Array.get 9 nominal
                 ]
                 []
             ]
@@ -1494,7 +1384,7 @@ viewNominalMember member =
             ""
 
 
-viewCardPrice : Int -> Mode -> ListGroup.Item Msg
+viewCardPrice : Int -> Mode -> Html Msg
 viewCardPrice nominal mode =
     case mode of
         EditCardPrice editable ->
@@ -1505,56 +1395,45 @@ viewCardPrice nominal mode =
                 nominal
 
 
-viewCardPriceNormalMode : Int -> ListGroup.Item Msg
+viewCardPriceNormalMode : Int -> Html Msg
 viewCardPriceNormalMode price =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditCardPriceMode
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Card price: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| String.fromInt price ]
-                ]
+    li []
+        [ label [] [ text "Card price: " ]
+        , label []
+            [ a [ onClick EditCardPriceMode ]
+                [ text <| String.fromInt price ]
             ]
         ]
 
 
-viewCardPriceEditMode : String -> ListGroup.Item Msg
+viewCardPriceEditMode : String -> Html Msg
 viewCardPriceEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "cardPriceInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.placeholder "Card price"
-                , Input.onInput InputCardPrice
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "cardPrice"
+                , placeholder "Card price"
+                , onInput InputCardPrice
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveCardPrice editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveCardPrice editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewDeviceId : String -> Mode -> ListGroup.Item Msg
+viewDeviceId : String -> Mode -> Html Msg
 viewDeviceId id mode =
     case mode of
         EditDeviceId editable ->
@@ -1564,55 +1443,51 @@ viewDeviceId id mode =
             viewDeviceIdNormalMode id
 
 
-viewDeviceIdNormalMode : String -> ListGroup.Item Msg
+viewDeviceIdNormalMode : String -> Html Msg
 viewDeviceIdNormalMode id =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeDeviceId
-                ]
-            ]
-            [ h4 []
-                [ text "Device ID: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text id ]
+    li []
+        [ label [] [ text "Device ID: " ]
+        , label []
+            [ a [ onClick EditModeDeviceId ]
+                [ text <|
+                    if String.isEmpty <| String.trim id then
+                        "NotSet"
+
+                    else
+                        id
                 ]
             ]
         ]
 
 
-viewDeviceIdEditMode : String -> ListGroup.Item Msg
+viewDeviceIdEditMode : String -> Html Msg
 viewDeviceIdEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "deviceIdInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.placeholder "Device ID"
-                , Input.onInput InputDeviceId
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "deviceId"
+                , placeholder "Device ID"
+                , onInput InputDeviceId
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveDeviceId editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveDeviceId editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewServerCode : String -> Mode -> ListGroup.Item Msg
+viewServerCode : String -> Mode -> Html Msg
 viewServerCode code mode =
     case mode of
         EditServerCode editable ->
@@ -1622,55 +1497,51 @@ viewServerCode code mode =
             viewServerCodeNormalMode code
 
 
-viewServerCodeNormalMode : String -> ListGroup.Item Msg
+viewServerCodeNormalMode : String -> Html Msg
 viewServerCodeNormalMode code =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeServerCode
-                ]
-            ]
-            [ h4 []
-                [ text "Server code: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text code ]
+    li []
+        [ label [] [ text "Server code: " ]
+        , label []
+            [ a [ onClick EditModeServerCode ]
+                [ text <|
+                    if String.isEmpty <| String.trim code then
+                        "NotSet"
+
+                    else
+                        code
                 ]
             ]
         ]
 
 
-viewServerCodeEditMode : String -> ListGroup.Item Msg
+viewServerCodeEditMode : String -> Html Msg
 viewServerCodeEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "serverCodeInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.placeholder "Server code"
-                , Input.onInput InputServerCode
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "serverCode"
+                , placeholder "Server code"
+                , onInput InputServerCode
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveServerCode editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveServerCode editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewBonusPercent : Int -> Mode -> ListGroup.Item Msg
+viewBonusPercent : Int -> Mode -> Html Msg
 viewBonusPercent percent mode =
     case mode of
         EditBonusPercent editable ->
@@ -1681,57 +1552,45 @@ viewBonusPercent percent mode =
                 percent
 
 
-viewBonusPercentNormalMode : Int -> ListGroup.Item Msg
+viewBonusPercentNormalMode : Int -> Html Msg
 viewBonusPercentNormalMode percent =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeBonusPercent
-                ]
-            ]
-            [ h4 []
-                [ text "Bonus percent: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        String.fromInt percent
-                    ]
-                ]
+    li []
+        [ label [] [ text "Bonus percent: " ]
+        , label []
+            [ a [ onClick EditModeBonusPercent ]
+                [ text <| String.fromInt percent ]
             ]
         ]
 
 
-viewBonusPercentEditMode : String -> ListGroup.Item Msg
+viewBonusPercentEditMode : String -> Html Msg
 viewBonusPercentEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "bonusPercentInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.onInput InputBonusPercent
-                , Input.placeholder "Bonus percent"
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "bonusPercent"
+                , placeholder "Bonus percent"
+                , onInput InputBonusPercent
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveBonusPercent editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveBonusPercent editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewBonusThreshold : Int -> Mode -> ListGroup.Item Msg
+viewBonusThreshold : Int -> Mode -> Html Msg
 viewBonusThreshold threshold mode =
     case mode of
         EditBonusThreshold editable ->
@@ -1742,57 +1601,45 @@ viewBonusThreshold threshold mode =
                 threshold
 
 
-viewBonusThresholdNormalMode : Int -> ListGroup.Item Msg
+viewBonusThresholdNormalMode : Int -> Html Msg
 viewBonusThresholdNormalMode threshold =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeBonusThreshold
-                ]
-            ]
-            [ h4 []
-                [ text "Bonus threshold: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <|
-                        String.fromInt threshold
-                    ]
-                ]
+    li []
+        [ label [] [ text "Bonus threshold: " ]
+        , label []
+            [ a [ onClick EditModeBonusThreshold ]
+                [ text <| String.fromInt threshold ]
             ]
         ]
 
 
-viewBonusThresholdEditMode : String -> ListGroup.Item Msg
+viewBonusThresholdEditMode : String -> Html Msg
 viewBonusThresholdEditMode editable =
-    ListGroup.li [ ListGroup.warning ]
-        [ InputGroup.config
-            (InputGroup.text
-                [ Input.id "bonusThresholdInput"
-                , Input.attrs [ Spacing.mAuto ]
-                , Input.onInput InputBonusThreshold
-                , Input.placeholder "Bonus threshold"
-                , Input.value editable
+    Html.form
+        [ class "pure-form" ]
+        [ fieldset []
+            [ input
+                [ id "bonusThreshold"
+                , placeholder "Bonus threshold"
+                , onInput InputBonusThreshold
+                , value editable
                 ]
-            )
-            |> InputGroup.successors
-                [ InputGroup.button
-                    [ Button.success
-                    , Button.onClick <|
-                        SaveBonusThreshold editable
-                    ]
-                    [ text "Save" ]
-                , InputGroup.button
-                    [ Button.warning
-                    , Button.onClick NormalMode
-                    ]
-                    [ text "Cancel" ]
+                []
+            , button
+                [ type_ "submit"
+                , class "pure-button button-warning"
+                , onClick <| SaveBonusThreshold editable
                 ]
-            |> InputGroup.view
+                [ text "Save" ]
+            , button
+                [ class "pure-button button-secondary"
+                , onClick NormalMode
+                ]
+                [ text "Cancel" ]
+            ]
         ]
 
 
-viewHopper : Faze -> Mode -> ListGroup.Item Msg
+viewHopper : Faze -> Mode -> Html Msg
 viewHopper faze mode =
     case mode of
         EditHopper editable ->
@@ -1802,52 +1649,72 @@ viewHopper faze mode =
             viewHopperNormalMode faze
 
 
-viewHopperNormalMode : Faze -> ListGroup.Item Msg
+viewHopperNormalMode : Faze -> Html Msg
 viewHopperNormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeHopper
-                ]
-            ]
-            [ h4 []
-                [ text <| "Hopper: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "Hopper: " ]
+        , label []
+            [ a [ onClick EditModeHopper ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewHopperEditMode : Faze -> ListGroup.Item Msg
+viewHopperEditMode : Faze -> Html Msg
 viewHopperEditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == Disabled)
-                [ Button.danger
-                , Button.onClick <| SetHopper Disabled
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Disabled ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetHopper Disabled
                 ]
                 [ text "Disable" ]
-            , ButtonGroup.radioButton
-                (faze == CcTalk)
-                [ Button.danger
-                , Button.onClick <| SetHopper CcTalk
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                CcTalk ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetHopper CcTalk
                 ]
                 [ text "CcTalk" ]
-            , ButtonGroup.radioButton
-                (faze == Pulse)
-                [ Button.danger
-                , Button.onClick <| SetHopper Pulse
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Pulse ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetHopper Pulse
                 ]
                 [ text "Pulse" ]
             ]
         ]
 
 
-viewHopperMode : Faze -> Mode -> ListGroup.Item Msg
+viewHopperMode : Faze -> Mode -> Html Msg
 viewHopperMode faze mode =
     case mode of
         EditHopperMode editable ->
@@ -1857,47 +1724,58 @@ viewHopperMode faze mode =
             viewHopperModeNormalMode faze
 
 
-viewHopperModeNormalMode : Faze -> ListGroup.Item Msg
+viewHopperModeNormalMode : Faze -> Html Msg
 viewHopperModeNormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeHopperMode
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Hopper mode: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "Hopper mode: " ]
+        , label []
+            [ a [ onClick EditModeHopperMode ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewHopperModeEditMode : Faze -> ListGroup.Item Msg
+viewHopperModeEditMode : Faze -> Html Msg
 viewHopperModeEditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == Mode_1)
-                [ Button.danger
-                , Button.onClick <| SetHopperMode Mode_1
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Mode_1 ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetHopperMode Mode_1
                 ]
                 [ text "Mode 1" ]
-            , ButtonGroup.radioButton
-                (faze == Mode_2)
-                [ Button.danger
-                , Button.onClick <| SetHopperMode Mode_2
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Mode_2 ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetHopperMode Mode_2
                 ]
                 [ text "Mode 2" ]
             ]
         ]
 
 
-viewBillValidator : Faze -> Mode -> ListGroup.Item Msg
+viewBillValidator : Faze -> Mode -> Html Msg
 viewBillValidator faze mode =
     case mode of
         EditBillValidator editable ->
@@ -1907,47 +1785,58 @@ viewBillValidator faze mode =
             viewBillValidatorNormalMode faze
 
 
-viewBillValidatorNormalMode : Faze -> ListGroup.Item Msg
+viewBillValidatorNormalMode : Faze -> Html Msg
 viewBillValidatorNormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeBillValidator
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Bill validator: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "Bill validator: " ]
+        , label []
+            [ a [ onClick EditModeBillValidator ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewBillValidatorEditMode : Faze -> ListGroup.Item Msg
+viewBillValidatorEditMode : Faze -> Html Msg
 viewBillValidatorEditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == Disabled)
-                [ Button.danger
-                , Button.onClick <| SetBillValidator Disabled
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Disabled ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetBillValidator Disabled
                 ]
                 [ text "Disable" ]
-            , ButtonGroup.radioButton
-                (faze == CcTalk)
-                [ Button.danger
-                , Button.onClick <| SetBillValidator CcTalk
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                CcTalk ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetBillValidator CcTalk
                 ]
                 [ text "CcTalk" ]
             ]
         ]
 
 
-viewRfidReader1 : Faze -> Mode -> ListGroup.Item Msg
+viewRfidReader1 : Faze -> Mode -> Html Msg
 viewRfidReader1 faze mode =
     case mode of
         EditRfidReader1 editable ->
@@ -1957,47 +1846,58 @@ viewRfidReader1 faze mode =
             viewRfidReader1NormalMode faze
 
 
-viewRfidReader1NormalMode : Faze -> ListGroup.Item Msg
+viewRfidReader1NormalMode : Faze -> Html Msg
 viewRfidReader1NormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeRfidReader1
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "RfidReader1: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "RfidReader1: " ]
+        , label []
+            [ a [ onClick EditModeRfidReader1 ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewRfidReader1EditMode : Faze -> ListGroup.Item Msg
+viewRfidReader1EditMode : Faze -> Html Msg
 viewRfidReader1EditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == Disabled)
-                [ Button.danger
-                , Button.onClick <| SetRfidReader1 Disabled
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Disabled ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetRfidReader1 Disabled
                 ]
                 [ text "Disable" ]
-            , ButtonGroup.radioButton
-                (faze == Enabled)
-                [ Button.danger
-                , Button.onClick <| SetRfidReader1 Enabled
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                CcTalk ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetRfidReader1 Enabled
                 ]
                 [ text "Enable" ]
             ]
         ]
 
 
-viewRfidReader2 : Faze -> Mode -> ListGroup.Item Msg
+viewRfidReader2 : Faze -> Mode -> Html Msg
 viewRfidReader2 faze mode =
     case mode of
         EditRfidReader2 editable ->
@@ -2007,47 +1907,58 @@ viewRfidReader2 faze mode =
             viewRfidReader2NormalMode faze
 
 
-viewRfidReader2NormalMode : Faze -> ListGroup.Item Msg
+viewRfidReader2NormalMode : Faze -> Html Msg
 viewRfidReader2NormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeRfidReader2
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "RfidReader2: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "RfidReader2: " ]
+        , label []
+            [ a [ onClick EditModeRfidReader2 ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewRfidReader2EditMode : Faze -> ListGroup.Item Msg
+viewRfidReader2EditMode : Faze -> Html Msg
 viewRfidReader2EditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == Disabled)
-                [ Button.danger
-                , Button.onClick <| SetRfidReader2 Disabled
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Disabled ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetRfidReader2 Disabled
                 ]
                 [ text "Disable" ]
-            , ButtonGroup.radioButton
-                (faze == Enabled)
-                [ Button.danger
-                , Button.onClick <| SetRfidReader2 Enabled
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                CcTalk ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetRfidReader2 Enabled
                 ]
                 [ text "Enable" ]
             ]
         ]
 
 
-viewDispenser : Faze -> Mode -> ListGroup.Item Msg
+viewDispenser : Faze -> Mode -> Html Msg
 viewDispenser faze mode =
     case mode of
         EditDispenser editable ->
@@ -2057,53 +1968,72 @@ viewDispenser faze mode =
             viewDispenserNormalMode faze
 
 
-viewDispenserNormalMode : Faze -> ListGroup.Item Msg
+viewDispenserNormalMode : Faze -> Html Msg
 viewDispenserNormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeDispenser
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Dispenser: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "Dispenser: " ]
+        , label []
+            [ a [ onClick EditModeDispenser ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewDispenserEditMode : Faze -> ListGroup.Item Msg
+viewDispenserEditMode : Faze -> Html Msg
 viewDispenserEditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == Disabled)
-                [ Button.danger
-                , Button.onClick <| SetDispenser Disabled
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Disabled ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetDispenser Disabled
                 ]
                 [ text "Disable" ]
-            , ButtonGroup.radioButton
-                (faze == CRT_531)
-                [ Button.danger
-                , Button.onClick <| SetDispenser CRT_531
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                CRT_531 ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetDispenser CRT_531
                 ]
                 [ text "CRT 531" ]
-            , ButtonGroup.radioButton
-                (faze == TCD_820M)
-                [ Button.danger
-                , Button.onClick <| SetDispenser TCD_820M
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                TCD_820M ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetDispenser TCD_820M
                 ]
                 [ text "TCD 820M" ]
             ]
         ]
 
 
-viewCardOut : Faze -> Mode -> ListGroup.Item Msg
+viewCardOut : Faze -> Mode -> Html Msg
 viewCardOut faze mode =
     case mode of
         EditCardOut editable ->
@@ -2113,47 +2043,58 @@ viewCardOut faze mode =
             viewCardOutNormalMode faze
 
 
-viewCardOutNormalMode : Faze -> ListGroup.Item Msg
+viewCardOutNormalMode : Faze -> Html Msg
 viewCardOutNormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeCardOut
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Card out: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "Card out: " ]
+        , label []
+            [ a [ onClick EditModeCardOut ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewCardOutEditMode : Faze -> ListGroup.Item Msg
+viewCardOutEditMode : Faze -> Html Msg
 viewCardOutEditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == ToGate)
-                [ Button.danger
-                , Button.onClick <| SetCardOut ToGate
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                ToGate ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetCardOut ToGate
                 ]
                 [ text "ToGate" ]
-            , ButtonGroup.radioButton
-                (faze == FullOut)
-                [ Button.danger
-                , Button.onClick <| SetCardOut FullOut
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                FullOut ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetCardOut FullOut
                 ]
                 [ text "FullOut" ]
             ]
         ]
 
 
-viewNetwork : Faze -> Mode -> ListGroup.Item Msg
+viewNetwork : Faze -> Mode -> Html Msg
 viewNetwork faze mode =
     case mode of
         EditNetwork editable ->
@@ -2163,58 +2104,93 @@ viewNetwork faze mode =
             viewNetworkNormalMode faze
 
 
-viewNetworkNormalMode : Faze -> ListGroup.Item Msg
+viewNetworkNormalMode : Faze -> Html Msg
 viewNetworkNormalMode faze =
-    ListGroup.li [ ListGroup.info ]
-        [ Button.button
-            [ Button.roleLink
-            , Button.attrs
-                [ Spacing.ml1
-                , onClick EditModeNetwork
-                ]
-            ]
-            [ h4 []
-                [ text <|
-                    "Network: "
-                , Badge.badgeDark [ Spacing.ml1 ]
-                    [ text <| fazeToString faze ]
-                ]
+    li []
+        [ label [] [ text "Network: " ]
+        , label []
+            [ a [ onClick EditModeNetwork ]
+                [ text <| fazeToString faze ]
             ]
         ]
 
 
-viewNetworkEditMode : Faze -> ListGroup.Item Msg
+viewNetworkEditMode : Faze -> Html Msg
 viewNetworkEditMode faze =
-    ListGroup.li [ ListGroup.warning ]
-        [ ButtonGroup.radioButtonGroup []
-            [ ButtonGroup.radioButton
-                (faze == None)
-                [ Button.danger
-                , Button.onClick <| SetNetwork None
+    li []
+        [ div
+            [ class "pure-button-group"
+            , Aria.role "group"
+            , Aria.ariaLabel "..."
+            ]
+            [ button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                None ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetNetwork None
                 ]
                 [ text "None" ]
-            , ButtonGroup.radioButton
-                (faze == RS_485)
-                [ Button.danger
-                , Button.onClick <| SetNetwork RS_485
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                RS_485 ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetNetwork RS_485
                 ]
                 [ text "RS 485" ]
-            , ButtonGroup.radioButton
-                (faze == Can)
-                [ Button.danger
-                , Button.onClick <| SetNetwork Can
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Can ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetNetwork Can
                 ]
                 [ text "Can" ]
-            , ButtonGroup.radioButton
-                (faze == Ethernet)
-                [ Button.danger
-                , Button.onClick <| SetNetwork Ethernet
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                Ethernet ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetNetwork Ethernet
                 ]
                 [ text "Ethernet" ]
-            , ButtonGroup.radioButton
-                (faze == WiFi)
-                [ Button.danger
-                , Button.onClick <| SetNetwork WiFi
+            , button
+                [ class <|
+                    "pure-button"
+                        ++ (case faze of
+                                WiFi ->
+                                    " button-secondary"
+                                        ++ " pure-button-active"
+
+                                _ ->
+                                    " button-warning"
+                           )
+                , onClick <| SetNetwork WiFi
                 ]
                 [ text "WiFi" ]
             ]
@@ -2241,7 +2217,7 @@ arrayToInt array =
 
 intToArray : Int -> Array
 intToArray value =
-    if value < 10000000000 then
+    if value < 10000000000 && value >= 0 then
         Array.repeat 10 0
 
     else
