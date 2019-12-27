@@ -1883,7 +1883,7 @@ viewRfidReader1EditMode faze =
                 [ class <|
                     "pure-button"
                         ++ (case faze of
-                                CcTalk ->
+                                Enabled ->
                                     " button-secondary"
                                         ++ " pure-button-active"
 
@@ -1944,7 +1944,7 @@ viewRfidReader2EditMode faze =
                 [ class <|
                     "pure-button"
                         ++ (case faze of
-                                CcTalk ->
+                                Enabled ->
                                     " button-secondary"
                                         ++ " pure-button-active"
 
