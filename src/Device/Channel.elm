@@ -9,6 +9,7 @@ module Device.Channel exposing
     , view
     )
 
+import Assets as Assets
 import Html exposing (..)
 import Json.Decode as D
 import Json.Encode as E
@@ -39,31 +40,10 @@ type alias Index =
 
 
 type alias Component =
-    ( Name, Unit )
-
-
-type alias Name =
-    String
-
-
-type Unit
-    = Liter Int
-    | Gram Int
-    | Kilowatt Int
-    | Meter Int
+    Assets.Component
 
 
 
--- type alias Ingredient =
---     ( Resource, Portion )
--- type alias Portion =
---     Int
---
--- type alias Resource =
---     ( Name, Unit )
---
--- type alias Unit =
---     String
 -- CREATE
 
 
