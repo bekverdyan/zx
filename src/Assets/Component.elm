@@ -1,15 +1,16 @@
 module Assets.Component exposing
-    ( Component
-    , Model
+    ( Model
     , Msg
-    , decodeComponent
-    , encodeComponent
-    , update
-    , view
+    , decoder
+    , encode
+    ,  update
+       -- , view
+
     )
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Attributes.Aria as Aria
 import Html.Events exposing (..)
 import Json.Decode as D
 import Json.Encode as E
@@ -18,18 +19,20 @@ import Json.Encode as E
 type alias Model =
     { component : Component
     , mode : Mode
-
-    -- , typedName : String
-    -- , selectedUnit : Maybe Unit
-    -- , validName : Bool
+    , readyToSave : ( Bool, Bool )
     }
 
 
 type Mode
     = Normal
-    | NameEdit String
-    | UnitEdit (Maybe Unit)
-    | NewComponent RowComponent
+    | NameEdit ( String, ReadyToSave )
+    | UnitEdit ( Maybe Unit, ReadyToSave )
+    | MultiEdit ( RowComponent, ReadyToSave )
+
+
+type ReadyToSave
+    = Yes
+    | No
 
 
 type alias RowComponent =
@@ -55,12 +58,10 @@ type Unit
 
 encode : Model -> E.Value
 encode model =
-    encodeComponent model.component
-
-
-encodeComponent : Component -> E.Value
-encodeComponent ( name, unit ) =
     let
+        ( name, unit ) =
+            model.component
+
         ( unitStr, value ) =
             getUnitValues unit
     in
@@ -95,8 +96,8 @@ getUnitValues unit =
 --             Model component ""
 
 
-decodeComponent : D.Decoder (Maybe Component)
-decodeComponent =
+decoder : D.Decoder (Maybe Component)
+decoder =
     D.map3 createComponent
         (D.field "name" D.string)
         (D.field "unit" D.string)
@@ -124,11 +125,9 @@ createComponent name unit value =
 
 type Msg
     = InputName String
-    | SelectLiter Unit
-    | SelectGram Unit
-    | SelectKilowatt Unit
-    | SelectMeter Unit
-    | CreateComponent ( Name, Unit )
+    | SelectUnit (Maybe Unit)
+    | SaveComponent ( Name, Unit )
+    | NewComponent
 
 
 update : Msg -> Model -> ( Model, Bool )
@@ -136,46 +135,38 @@ update msg model =
     case msg of
         InputName editable ->
             let
-                validName =
-                    isValidName
-                        model.typedName
+                readyToSave =
+                    ( isValidName editable
+                    , Tuple.second model.readyToSave
+                    )
             in
             ( { model
-                | typedName = editable
-                , validName = validName
+                | readyToSave = readyToSave
+                , mode = NameEdit ( editable, No )
               }
             , False
             )
 
-        SelectLiter liter ->
+        SelectUnit selected ->
+            let
+                readyToSave =
+                    ( Tuple.first model.readyToSave
+                    , case selected of
+                        Just unit ->
+                            True
+
+                        Nothing ->
+                            False
+                    )
+            in
             ( { model
-                | selectedUnit = Just liter
+                | mode = UnitEdit ( selected, No )
+                , readyToSave = readyToSave
               }
             , False
             )
 
-        SelectGram gram ->
-            ( { model
-                | selectedUnit = Just gram
-              }
-            , False
-            )
-
-        SelectKilowatt kilowatt ->
-            ( { model
-                | selectedUnit = Just kilowatt
-              }
-            , False
-            )
-
-        SelectMeter meter ->
-            ( { model
-                | selectedUnit = Just meter
-              }
-            , False
-            )
-
-        CreateComponent ( name, unit ) ->
+        SaveComponent ( name, unit ) ->
             ( { model
                 | component =
                     ( name
@@ -185,24 +176,13 @@ update msg model =
             , True
             )
 
-
-isValidName : String -> Bool
-isValidName name =
-    not <|
-        String.isEmpty <|
-            String.trim
-                name
+        NewComponent ->
+            ( model, False )
 
 
 
 -- VIEW
 
-
-viewUnitSelection : Maybe Unit -> Html Msg
-viewUnitselection unit =
-  let
-
-  in
 
 view : Model -> Html Msg
 view model =
@@ -215,43 +195,19 @@ view model =
             , input
                 [ type_ "text"
                 , placeholder "Component name"
-                , value model.typedName
+
+                -- , value model.typedName
                 , onInput InputName
                 ]
                 []
-            , select [ id "state" ]
-                [ option
-                    [ onClick <|
-                        SelectLiter <|
-                            Liter 0
-                    ]
-                    [ text "Liter" ]
-                , option
-                    [ onClick <|
-                        SelectGram <|
-                            Gram 0
-                    ]
-                    [ text "Gram" ]
-                , option
-                    [ onClick <|
-                        SelectKilowatt <|
-                            Kilowatt 0
-                    ]
-                    [ text "Kilowatt" ]
-                , option
-                    [ onClick <|
-                        SelectMeter <|
-                            Meter 0
-                    ]
-                    [ text "Meter" ]
-                ]
-            , case model.selectedUnit of
-                Just unit ->
-                    if isValidName model.typedName then
+            , viewUnit <| Tuple.second model.component
+            , case model.mode of
+                MultiEdit component ->
+                    if saveAllowed model.readyToSave then
                         viewCreateButton <|
                             Functional
-                                ( model.typedName
-                                , unit
+                                ( component.name
+                                , Maybe.withDefault 0 component.unit
                                 )
 
                     else
@@ -259,8 +215,28 @@ view model =
 
                 _ ->
                     viewCreateButton Disabled
+
+            -- , case model.selectedUnit of
+            --     Just unit ->
+            --         if isValidName model.typedName then
+            --             viewCreateButton <|
+            --                 Functional
+            --                     ( model.typedName
+            --                     , unit
+            --                     )
+            --
+            --         else
+            --             viewCreateButton Disabled
+            --
+            --     _ ->
+            --         viewCreateButton Disabled
             ]
         ]
+
+
+saveAllowed : ( Bool, Bool ) -> Bool
+saveAllowed ( name, unit ) =
+    False
 
 
 type ButtonState
@@ -277,7 +253,8 @@ viewCreateButton state =
                 , class <|
                     "pure-button"
                         ++ " pure-button-primary"
-                , onClick <| CreateComponent ( name, unit )
+                , onClick <|
+                    SaveComponent ( name, unit )
                 ]
                 [ text "Create" ]
 
@@ -294,3 +271,103 @@ viewCreateButton state =
 
 
 -- viewComponent
+
+
+viewUnit : Maybe Unit -> Mode -> Html Msg
+viewUnit selected mode =
+    case mode of
+        UnitEdit unit ->
+            viewUnitEditMode unit
+
+        _ ->
+            viewUnitNormalMode selected
+
+
+viewUnitNormalMode : Maybe Unit -> Html Msg
+viewUnitNormalMode selected =
+    li []
+        [ label []
+            [ case selected of
+                Just unit ->
+                    text <| unitToString unit
+
+                Nothing ->
+                    text ""
+            ]
+        ]
+
+
+viewUnitEditMode : Maybe Unit -> Html Msg
+viewUnitEditMode selected =
+    let
+        units =
+            [ viewUnitMember (Liter 0) selected
+            , viewUnitMember (Gram 0) selected
+            , viewUnitMember (Kilowatt 0) selected
+            , viewUnitMember (Meter 0) selected
+            ]
+
+        options =
+            case selected of
+                Just _ ->
+                    units
+
+                Nothing ->
+                    option
+                        [ onClick <| SelectUnit Nothing
+                        , Aria.ariaSelected "true"
+                        ]
+                        []
+                        :: units
+    in
+    li []
+        [ select [ id "units" ] options ]
+
+
+viewUnitMember : Unit -> Maybe Unit -> Html Msg
+viewUnitMember member selected =
+    let
+        attributes =
+            [ onClick <| SelectUnit <| Just <| Liter 0 ]
+    in
+    option
+        (case selected of
+            Just unit ->
+                if member == unit then
+                    Aria.ariaSelected "true" :: attributes
+
+                else
+                    attributes
+
+            Nothing ->
+                attributes
+        )
+        [ text <| unitToString member ]
+
+
+
+-- MAP
+
+
+unitToString : Unit -> String
+unitToString unit =
+    case unit of
+        Liter _ ->
+            "Liter"
+
+        Gram _ ->
+            "Gram"
+
+        Kilowatt _ ->
+            "Kilowatt"
+
+        Meter _ ->
+            "Meter"
+
+
+isValidName : String -> Bool
+isValidName name =
+    not <|
+        String.isEmpty <|
+            String.trim
+                name
