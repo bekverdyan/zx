@@ -209,14 +209,10 @@ view model =
             Html.form
                 [ class "pure-form" ]
                 [ fieldset []
-                    [ viewNameEditMode
+                    [ viewNameInput
                         editable
+                    , viewUnitDropdown
                         selected
-                        mode
-                    , viewUnitEditMode
-                        selected
-                        editable
-                        mode
                     , viewMutatorButton
                         (case selected of
                             Just unit ->
@@ -254,37 +250,9 @@ viewName : Name -> Mode -> Unit -> Html Msg
 viewName name mode unit =
     case mode of
         NameEdit editable ->
-            viewNameEditMode name (Just unit) mode
-
-        MultiEdit ( editable, selected ) ->
-            Html.form
-                [ class "pure-form" ]
-                [ fieldset []
-                    [ viewNameEditMode
-                        editable
-                        (Just unit)
-                        mode
-                    , viewUnitEditMode
-                        selected
-                        name
-                        mode
-                    , viewMutatorButton
-                        (case selected of
-                            Just value ->
-                                if isValidName editable then
-                                    Functional
-                                        ( editable, value )
-
-                                else
-                                    Disabled
-
-                            Nothing ->
-                                Disabled
-                        )
-                        Save
-                    , viewCancelButton
-                    ]
-                ]
+            viewNameEditMode
+                name
+                (Just unit)
 
         _ ->
             viewNameNormalMode name
@@ -310,53 +278,44 @@ viewNameNormalMode name =
         ]
 
 
-viewNameEditMode : Name -> Maybe Unit -> Mode -> Html Msg
-viewNameEditMode editable unit mode =
-    let
-        nameInput =
-            input
-                [ id "name"
-                , placeholder "Component Name"
-                , onInput InputName
-                , value editable
-                ]
-                []
-    in
-    case mode of
-        NameEdit name ->
-            Html.form
-                [ class "pure-form" ]
-                [ case unit of
-                    Just value ->
-                        fieldset []
-                            [ nameInput
-                            , viewMutatorButton
-                                (if isValidName name then
-                                    Functional ( name, value )
+viewNameInput : Name -> Html Msg
+viewNameInput editable =
+    input
+        [ id "name"
+        , placeholder "Component Name"
+        , onInput InputName
+        , value editable
+        ]
+        []
 
-                                 else
-                                    Disabled
-                                )
-                                Save
-                            , viewCancelButton
-                            ]
+
+viewNameEditMode : Name -> Maybe Unit -> Html Msg
+viewNameEditMode editable selected =
+    Html.form
+        [ class "pure-form" ]
+        [ viewNameInput editable
+        , viewMutatorButton
+            (if isValidName editable then
+                case selected of
+                    Just unit ->
+                        Functional ( editable, unit )
 
                     Nothing ->
-                        nameInput
-                ]
+                        Disabled
 
-        _ ->
-            nameInput
+             else
+                Disabled
+            )
+            Save
+        , viewCancelButton
+        ]
 
 
 viewUnit : Maybe Unit -> Name -> Mode -> Html Msg
 viewUnit selected name mode =
     case mode of
         UnitEdit unit ->
-            viewUnitEditMode unit name mode
-
-        MultiEdit ( editable, unit ) ->
-            viewUnitEditMode unit name mode
+            viewUnitEditMode unit name
 
         _ ->
             viewUnitNormalMode selected
@@ -383,8 +342,8 @@ viewUnitNormalMode selected =
         ]
 
 
-viewUnitEditMode : Maybe Unit -> Name -> Mode -> Html Msg
-viewUnitEditMode selected name mode =
+viewUnitDropdown : Maybe Unit -> Html Msg
+viewUnitDropdown selected =
     let
         units =
             [ viewUnitMember (Liter 0) selected
@@ -404,31 +363,24 @@ viewUnitEditMode selected name mode =
                         []
                         :: units
     in
-    li [] <|
-        case selected of
-            Just unit ->
-                case mode of
-                    MultiEdit _ ->
-                        [ select [ id "units" ] options ]
+    select [ id "units" ] options
 
-                    _ ->
-                        [ select [ id "units" ] options
-                        , viewMutatorButton
-                            (Functional ( name, unit ))
-                            Save
-                        , viewCancelButton
-                        ]
 
-            Nothing ->
-                case mode of
-                    MultiEdit _ ->
-                        [ select [ id "units" ] options ]
+viewUnitEditMode : Maybe Unit -> Name -> Html Msg
+viewUnitEditMode selected name =
+    li []
+        [ viewUnitDropdown selected
+        , viewMutatorButton
+            (case selected of
+                Just unit ->
+                    Functional ( name, unit )
 
-                    _ ->
-                        [ select [ id "units" ] options
-                        , viewMutatorButton Disabled Save
-                        , viewCancelButton
-                        ]
+                Nothing ->
+                    Disabled
+            )
+            Save
+        , viewCancelButton
+        ]
 
 
 viewUnitMember : Unit -> Maybe Unit -> Html Msg
