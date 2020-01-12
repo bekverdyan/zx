@@ -3,9 +3,8 @@ module Assets.Component exposing
     , Msg
     , decoder
     , encode
-    ,  update
-       -- , view
-
+    , update
+    , view
     )
 
 import Html exposing (..)
@@ -19,24 +18,21 @@ import Json.Encode as E
 type alias Model =
     { component : Component
     , mode : Mode
-    , readyToSave : ( Bool, Bool )
     }
 
 
 type Mode
     = Normal
-    | NameEdit ( String, ReadyToSave )
-    | UnitEdit ( Maybe Unit, ReadyToSave )
-    | MultiEdit ( RowComponent, ReadyToSave )
-
-
-type ReadyToSave
-    = Yes
-    | No
+    | NameEdit Name
+    | UnitEdit (Maybe Unit)
+    | MultiEdit ( Name, Maybe Unit )
+    | Remove Name
+    | InChannel
+    | InCounter
 
 
 type alias RowComponent =
-    { name : String
+    { name : Name
     , unit : Maybe Unit
     }
 
@@ -88,14 +84,6 @@ getUnitValues unit =
             ( "Meter", value )
 
 
-
--- decoder : D.Decoder (Maybe Model)
--- decoder =
---     case decodeComponent of
---         Just component ->
---             Model component ""
-
-
 decoder : D.Decoder (Maybe Component)
 decoder =
     D.map3 createComponent
@@ -124,46 +112,61 @@ createComponent name unit value =
 
 
 type Msg
-    = InputName String
-    | SelectUnit (Maybe Unit)
+    = ToNameEditMode
+    | InputName Name
+    | ToUnitEditMode
+    | SelectUnit Unit
     | SaveComponent ( Name, Unit )
+    | Cancel
     | NewComponent
+    | DeleteComponent Name
 
 
-update : Msg -> Model -> ( Model, Bool )
+type Action
+    = NoOp
+    | Save
+    | Delete
+
+
+update : Msg -> Model -> ( Model, Action )
 update msg model =
     case msg of
-        InputName editable ->
-            let
-                readyToSave =
-                    ( isValidName editable
-                    , Tuple.second model.readyToSave
-                    )
-            in
+        ToNameEditMode ->
             ( { model
-                | readyToSave = readyToSave
-                , mode = NameEdit ( editable, No )
+                | mode =
+                    NameEdit <|
+                        Tuple.first
+                            model.component
               }
-            , False
+            , NoOp
+            )
+
+        InputName editable ->
+            ( { model
+                | mode =
+                    NameEdit
+                        editable
+              }
+            , NoOp
+            )
+
+        ToUnitEditMode ->
+            ( { model
+                | mode =
+                    UnitEdit <|
+                        Just <|
+                            Tuple.second
+                                model.component
+              }
+            , NoOp
             )
 
         SelectUnit selected ->
-            let
-                readyToSave =
-                    ( Tuple.first model.readyToSave
-                    , case selected of
-                        Just unit ->
-                            True
-
-                        Nothing ->
-                            False
-                    )
-            in
             ( { model
-                | mode = UnitEdit ( selected, No )
-                , readyToSave = readyToSave
+                | mode =
+                    UnitEdit <| Just selected
               }
-            , False
+            , NoOp
             )
 
         SaveComponent ( name, unit ) ->
@@ -173,111 +176,187 @@ update msg model =
                     , unit
                     )
               }
-            , True
+            , Save
             )
 
+        Cancel ->
+            ( { model | mode = Normal }, NoOp )
+
         NewComponent ->
-            ( model, False )
+            ( { model
+                | mode =
+                    MultiEdit ( "", Nothing )
+              }
+            , NoOp
+            )
+
+        DeleteComponent name ->
+            ( model, Delete )
 
 
 
--- VIEW
+-- VIEW UNIT
 
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ Html.form [ class "pure-form" ]
-            [ fieldset []
-                [ legend []
-                    [ text "Create new Component" ]
-                ]
-            , input
-                [ type_ "text"
-                , placeholder "Component name"
+    let
+        mode =
+            model.mode
+    in
+    case mode of
+        MultiEdit ( editable, selected ) ->
+            Html.form
+                [ class "pure-form" ]
+                [ fieldset []
+                    [ viewNameEditMode
+                        editable
+                        selected
+                        mode
+                    , viewUnitEditMode
+                        selected
+                        editable
+                        mode
+                    , viewMutatorButton
+                        (case selected of
+                            Just unit ->
+                                if isValidName editable then
+                                    Functional
+                                        ( editable, unit )
 
-                -- , value model.typedName
-                , onInput InputName
+                                else
+                                    Disabled
+
+                            Nothing ->
+                                Disabled
+                        )
+                        Save
+                    , viewCancelButton
+                    ]
                 ]
-                []
-            , viewUnit <| Tuple.second model.component
-            , case model.mode of
-                MultiEdit component ->
-                    if saveAllowed model.readyToSave then
-                        viewCreateButton <|
-                            Functional
-                                ( component.name
-                                , Maybe.withDefault 0 component.unit
-                                )
+
+        _ ->
+            li []
+                [ viewName
+                    (Tuple.first model.component)
+                    model.mode
+                    (Tuple.second model.component)
+                , viewUnit
+                    (Just <|
+                        Tuple.second model.component
+                    )
+                    (Tuple.first model.component)
+                    model.mode
+                ]
+
+
+viewName : Name -> Mode -> Unit -> Html Msg
+viewName name mode unit =
+    case mode of
+        NameEdit editable ->
+            viewNameEditMode name (Just unit) mode
+
+        MultiEdit ( editable, selected ) ->
+            Html.form
+                [ class "pure-form" ]
+                [ fieldset []
+                    [ viewNameEditMode
+                        editable
+                        (Just unit)
+                        mode
+                    , viewUnitEditMode
+                        selected
+                        name
+                        mode
+                    , viewMutatorButton
+                        (case selected of
+                            Just value ->
+                                if isValidName editable then
+                                    Functional
+                                        ( editable, value )
+
+                                else
+                                    Disabled
+
+                            Nothing ->
+                                Disabled
+                        )
+                        Save
+                    , viewCancelButton
+                    ]
+                ]
+
+        _ ->
+            viewNameNormalMode name
+
+
+viewNameNormalMode : Name -> Html Msg
+viewNameNormalMode name =
+    li []
+        [ label []
+            [ a
+                [ class "pure-button"
+                , href "#"
+                , onClick ToNameEditMode
+                ]
+                [ text <|
+                    if isValidName name then
+                        name
 
                     else
-                        viewCreateButton Disabled
-
-                _ ->
-                    viewCreateButton Disabled
-
-            -- , case model.selectedUnit of
-            --     Just unit ->
-            --         if isValidName model.typedName then
-            --             viewCreateButton <|
-            --                 Functional
-            --                     ( model.typedName
-            --                     , unit
-            --                     )
-            --
-            --         else
-            --             viewCreateButton Disabled
-            --
-            --     _ ->
-            --         viewCreateButton Disabled
+                        " "
+                ]
             ]
         ]
 
 
-saveAllowed : ( Bool, Bool ) -> Bool
-saveAllowed ( name, unit ) =
-    False
-
-
-type ButtonState
-    = Functional ( Name, Unit )
-    | Disabled
-
-
-viewCreateButton : ButtonState -> Html Msg
-viewCreateButton state =
-    case state of
-        Functional ( name, unit ) ->
-            button
-                [ type_ "submit"
-                , class <|
-                    "pure-button"
-                        ++ " pure-button-primary"
-                , onClick <|
-                    SaveComponent ( name, unit )
+viewNameEditMode : Name -> Maybe Unit -> Mode -> Html Msg
+viewNameEditMode editable unit mode =
+    let
+        nameInput =
+            input
+                [ id "name"
+                , placeholder "Component Name"
+                , onInput InputName
+                , value editable
                 ]
-                [ text "Create" ]
+                []
+    in
+    case mode of
+        NameEdit name ->
+            Html.form
+                [ class "pure-form" ]
+                [ case unit of
+                    Just value ->
+                        fieldset []
+                            [ nameInput
+                            , viewMutatorButton
+                                (if isValidName name then
+                                    Functional ( name, value )
 
-        Disabled ->
-            button
-                [ type_ "submit"
-                , class <|
-                    "pure-button"
-                        ++ " pure-button-primary"
-                , disabled True
+                                 else
+                                    Disabled
+                                )
+                                Save
+                            , viewCancelButton
+                            ]
+
+                    Nothing ->
+                        nameInput
                 ]
-                [ text "Create" ]
+
+        _ ->
+            nameInput
 
 
-
--- viewComponent
-
-
-viewUnit : Maybe Unit -> Mode -> Html Msg
-viewUnit selected mode =
+viewUnit : Maybe Unit -> Name -> Mode -> Html Msg
+viewUnit selected name mode =
     case mode of
         UnitEdit unit ->
-            viewUnitEditMode unit
+            viewUnitEditMode unit name mode
+
+        MultiEdit ( editable, unit ) ->
+            viewUnitEditMode unit name mode
 
         _ ->
             viewUnitNormalMode selected
@@ -287,18 +366,25 @@ viewUnitNormalMode : Maybe Unit -> Html Msg
 viewUnitNormalMode selected =
     li []
         [ label []
-            [ case selected of
-                Just unit ->
-                    text <| unitToString unit
+            [ a
+                [ class "pure-button"
+                , href "#"
+                , onClick ToUnitEditMode
+                ]
+                [ text <|
+                    case selected of
+                        Just unit ->
+                            unitToString unit
 
-                Nothing ->
-                    text ""
+                        Nothing ->
+                            " "
+                ]
             ]
         ]
 
 
-viewUnitEditMode : Maybe Unit -> Html Msg
-viewUnitEditMode selected =
+viewUnitEditMode : Maybe Unit -> Name -> Mode -> Html Msg
+viewUnitEditMode selected name mode =
     let
         units =
             [ viewUnitMember (Liter 0) selected
@@ -314,21 +400,42 @@ viewUnitEditMode selected =
 
                 Nothing ->
                     option
-                        [ onClick <| SelectUnit Nothing
-                        , Aria.ariaSelected "true"
-                        ]
+                        [ Aria.ariaSelected "true" ]
                         []
                         :: units
     in
-    li []
-        [ select [ id "units" ] options ]
+    li [] <|
+        case selected of
+            Just unit ->
+                case mode of
+                    MultiEdit _ ->
+                        [ select [ id "units" ] options ]
+
+                    _ ->
+                        [ select [ id "units" ] options
+                        , viewMutatorButton
+                            (Functional ( name, unit ))
+                            Save
+                        , viewCancelButton
+                        ]
+
+            Nothing ->
+                case mode of
+                    MultiEdit _ ->
+                        [ select [ id "units" ] options ]
+
+                    _ ->
+                        [ select [ id "units" ] options
+                        , viewMutatorButton Disabled Save
+                        , viewCancelButton
+                        ]
 
 
 viewUnitMember : Unit -> Maybe Unit -> Html Msg
 viewUnitMember member selected =
     let
         attributes =
-            [ onClick <| SelectUnit <| Just <| Liter 0 ]
+            [ onClick <| SelectUnit <| Liter 0 ]
     in
     option
         (case selected of
@@ -343,6 +450,82 @@ viewUnitMember member selected =
                 attributes
         )
         [ text <| unitToString member ]
+
+
+
+-- VIEW BUTTONS
+
+
+type ButtonState
+    = Functional ( Name, Unit )
+    | Disabled
+
+
+viewMutatorButton : ButtonState -> Action -> Html Msg
+viewMutatorButton state action =
+    case state of
+        Functional ( name, unit ) ->
+            let
+                ( buttonName, buttonStyle, buttonMsg ) =
+                    case action of
+                        Save ->
+                            ( "Save"
+                            , "pure-button"
+                                ++ " pure-button-primary"
+                            , SaveComponent ( name, unit )
+                            )
+
+                        Delete ->
+                            ( "Delete"
+                            , "pure-button"
+                                ++ " pure-button-primary"
+                            , DeleteComponent name
+                            )
+
+                        NoOp ->
+                            ( " "
+                            , "pure-button"
+                                ++ " pure-button-primary"
+                            , Cancel
+                            )
+            in
+            button
+                [ type_ "submit"
+                , class buttonStyle
+                , onClick buttonMsg
+                ]
+                [ text buttonName ]
+
+        Disabled ->
+            let
+                buttonName =
+                    case action of
+                        Save ->
+                            "Save"
+
+                        Delete ->
+                            "Delete"
+
+                        NoOp ->
+                            " "
+            in
+            button
+                [ type_ "submit"
+                , class <|
+                    "pure-button"
+                        ++ " pure-button-primary"
+                , disabled True
+                ]
+                [ text buttonName ]
+
+
+viewCancelButton : Html Msg
+viewCancelButton =
+    button
+        [ class "pure-button button-secondary"
+        , onClick Cancel
+        ]
+        [ text "Cancel" ]
 
 
 
