@@ -1,10 +1,16 @@
 module Assets.Component exposing
     ( Model
     , Msg
+    , Name
+    , Unit
     , decoder
     , encode
+    , isValidName
     , update
     , view
+    , viewCancelButton
+    , viewNameInput
+    , viewUnitDropdown
     )
 
 import Html exposing (..)
@@ -24,17 +30,8 @@ type alias Model =
 type Mode
     = Normal
     | NameEdit Name
-    | UnitEdit (Maybe Unit)
-    | MultiEdit ( Name, Maybe Unit )
+    | UnitEdit Unit
     | Remove Name
-    | InChannel
-    | InCounter
-
-
-type alias RowComponent =
-    { name : Name
-    , unit : Maybe Unit
-    }
 
 
 type alias Component =
@@ -118,7 +115,6 @@ type Msg
     | SelectUnit Unit
     | SaveComponent ( Name, Unit )
     | Cancel
-    | NewComponent
     | DeleteComponent Name
 
 
@@ -151,44 +147,32 @@ update msg model =
             )
 
         ToUnitEditMode ->
+            let
+                ( _, unit ) =
+                    model.component
+            in
             ( { model
-                | mode =
-                    UnitEdit <|
-                        Just <|
-                            Tuple.second
-                                model.component
+                | mode = UnitEdit unit
               }
             , NoOp
             )
 
         SelectUnit selected ->
             ( { model
-                | mode =
-                    UnitEdit <| Just selected
+                | mode = UnitEdit selected
               }
             , NoOp
             )
 
         SaveComponent ( name, unit ) ->
             ( { model
-                | component =
-                    ( name
-                    , unit
-                    )
+                | component = ( name, unit )
               }
             , Save
             )
 
         Cancel ->
             ( { model | mode = Normal }, NoOp )
-
-        NewComponent ->
-            ( { model
-                | mode =
-                    MultiEdit ( "", Nothing )
-              }
-            , NoOp
-            )
 
         DeleteComponent name ->
             ( model, Delete )
@@ -203,56 +187,21 @@ view model =
     let
         mode =
             model.mode
+
+        ( name, unit ) =
+            model.component
     in
-    case mode of
-        MultiEdit ( editable, selected ) ->
-            Html.form
-                [ class "pure-form" ]
-                [ fieldset []
-                    [ viewNameInput
-                        editable
-                    , viewUnitDropdown
-                        selected
-                    , viewMutatorButton
-                        (case selected of
-                            Just unit ->
-                                if isValidName editable then
-                                    Functional
-                                        ( editable, unit )
-
-                                else
-                                    Disabled
-
-                            Nothing ->
-                                Disabled
-                        )
-                        Save
-                    , viewCancelButton
-                    ]
-                ]
-
-        _ ->
-            li []
-                [ viewName
-                    (Tuple.first model.component)
-                    model.mode
-                    (Tuple.second model.component)
-                , viewUnit
-                    (Just <|
-                        Tuple.second model.component
-                    )
-                    (Tuple.first model.component)
-                    model.mode
-                ]
+    li []
+        [ viewName name mode unit
+        , viewUnit unit name mode
+        ]
 
 
 viewName : Name -> Mode -> Unit -> Html Msg
 viewName name mode unit =
     case mode of
         NameEdit editable ->
-            viewNameEditMode
-                name
-                (Just unit)
+            viewNameEditMode name unit
 
         _ ->
             viewNameNormalMode name
@@ -278,50 +227,43 @@ viewNameNormalMode name =
         ]
 
 
-viewNameInput : Name -> Html Msg
-viewNameInput editable =
+viewNameInput : (Name -> msg) -> Name -> Html msg
+viewNameInput inputMsg editable =
     input
         [ id "name"
         , placeholder "Component Name"
-        , onInput InputName
+        , onInput inputMsg
         , value editable
         ]
         []
 
 
-viewNameEditMode : Name -> Maybe Unit -> Html Msg
-viewNameEditMode editable selected =
+viewNameEditMode : Name -> Unit -> Html Msg
+viewNameEditMode editable unit =
     Html.form
         [ class "pure-form" ]
-        [ viewNameInput editable
-        , viewMutatorButton
-            (if isValidName editable then
-                case selected of
-                    Just unit ->
-                        Functional ( editable, unit )
+        [ viewNameInput InputName editable
+        , viewSaveButton <|
+            if isValidName editable then
+                Functional ( editable, unit )
 
-                    Nothing ->
-                        Disabled
-
-             else
+            else
                 Disabled
-            )
-            Save
-        , viewCancelButton
+        , viewCancelButton Cancel
         ]
 
 
-viewUnit : Maybe Unit -> Name -> Mode -> Html Msg
+viewUnit : Unit -> Name -> Mode -> Html Msg
 viewUnit selected name mode =
     case mode of
         UnitEdit unit ->
-            viewUnitEditMode unit name
+            viewUnitEditMode selected name
 
         _ ->
             viewUnitNormalMode selected
 
 
-viewUnitNormalMode : Maybe Unit -> Html Msg
+viewUnitNormalMode : Unit -> Html Msg
 viewUnitNormalMode selected =
     li []
         [ label []
@@ -330,26 +272,20 @@ viewUnitNormalMode selected =
                 , href "#"
                 , onClick ToUnitEditMode
                 ]
-                [ text <|
-                    case selected of
-                        Just unit ->
-                            unitToString unit
-
-                        Nothing ->
-                            " "
+                [ text <| unitToString selected
                 ]
             ]
         ]
 
 
-viewUnitDropdown : Maybe Unit -> Html Msg
-viewUnitDropdown selected =
+viewUnitDropdown : (Unit -> msg) -> Maybe Unit -> Html msg
+viewUnitDropdown selectMsg selected =
     let
         units =
-            [ viewUnitMember (Liter 0) selected
-            , viewUnitMember (Gram 0) selected
-            , viewUnitMember (Kilowatt 0) selected
-            , viewUnitMember (Meter 0) selected
+            [ viewUnitMember selectMsg (Liter 0) selected
+            , viewUnitMember selectMsg (Gram 0) selected
+            , viewUnitMember selectMsg (Kilowatt 0) selected
+            , viewUnitMember selectMsg (Meter 0) selected
             ]
 
         options =
@@ -366,28 +302,25 @@ viewUnitDropdown selected =
     select [ id "units" ] options
 
 
-viewUnitEditMode : Maybe Unit -> Name -> Html Msg
+viewUnitEditMode : Unit -> Name -> Html Msg
 viewUnitEditMode selected name =
     li []
-        [ viewUnitDropdown selected
-        , viewMutatorButton
-            (case selected of
-                Just unit ->
-                    Functional ( name, unit )
-
-                Nothing ->
-                    Disabled
-            )
-            Save
-        , viewCancelButton
+        [ viewUnitDropdown SelectUnit <| Just selected
+        , viewSaveButton <|
+            Functional ( name, selected )
+        , viewCancelButton Cancel
         ]
 
 
-viewUnitMember : Unit -> Maybe Unit -> Html Msg
-viewUnitMember member selected =
+viewUnitMember :
+    (Unit -> msg)
+    -> Unit
+    -> Maybe Unit
+    -> Html msg
+viewUnitMember selectMsg member selected =
     let
         attributes =
-            [ onClick <| SelectUnit <| Liter 0 ]
+            [ onClick <| selectMsg <| member ]
     in
     option
         (case selected of
@@ -413,69 +346,35 @@ type ButtonState
     | Disabled
 
 
-viewMutatorButton : ButtonState -> Action -> Html Msg
-viewMutatorButton state action =
-    case state of
-        Functional ( name, unit ) ->
-            let
-                ( buttonName, buttonStyle, buttonMsg ) =
-                    case action of
-                        Save ->
-                            ( "Save"
-                            , "pure-button"
+viewSaveButton : ButtonState -> Html Msg
+viewSaveButton state =
+    button
+        (type_ "submit"
+            :: (case state of
+                    Functional ( name, unit ) ->
+                        [ class <|
+                            "pure-button"
                                 ++ " pure-button-primary"
-                            , SaveComponent ( name, unit )
-                            )
+                        , onClick <|
+                            SaveComponent ( name, unit )
+                        ]
 
-                        Delete ->
-                            ( "Delete"
-                            , "pure-button"
+                    Disabled ->
+                        [ class <|
+                            "pure-button"
                                 ++ " pure-button-primary"
-                            , DeleteComponent name
-                            )
-
-                        NoOp ->
-                            ( " "
-                            , "pure-button"
-                                ++ " pure-button-primary"
-                            , Cancel
-                            )
-            in
-            button
-                [ type_ "submit"
-                , class buttonStyle
-                , onClick buttonMsg
-                ]
-                [ text buttonName ]
-
-        Disabled ->
-            let
-                buttonName =
-                    case action of
-                        Save ->
-                            "Save"
-
-                        Delete ->
-                            "Delete"
-
-                        NoOp ->
-                            " "
-            in
-            button
-                [ type_ "submit"
-                , class <|
-                    "pure-button"
-                        ++ " pure-button-primary"
-                , disabled True
-                ]
-                [ text buttonName ]
+                        , disabled True
+                        ]
+               )
+        )
+        [ text "Save" ]
 
 
-viewCancelButton : Html Msg
-viewCancelButton =
+viewCancelButton : msg -> Html msg
+viewCancelButton cancel =
     button
         [ class "pure-button button-secondary"
-        , onClick Cancel
+        , onClick cancel
         ]
         [ text "Cancel" ]
 
