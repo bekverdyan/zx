@@ -1,16 +1,10 @@
 module Assets.Component exposing
     ( Model
     , Msg
-    , Name
-    , Unit
     , decoder
     , encode
-    , isValidName
     , update
     , view
-    , viewCancelButton
-    , viewNameInput
-    , viewUnitDropdown
     )
 
 import Html exposing (..)
@@ -21,10 +15,15 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-type alias Model =
-    { component : Component
-    , mode : Mode
-    }
+type Model
+    = Defined ( Component, Mode )
+    | New State
+
+
+type State
+    = Closed
+    | Open ( Name, Maybe Unit )
+    | Created ( Name, Unit )
 
 
 type Mode
@@ -49,12 +48,9 @@ type Unit
     | Meter Float
 
 
-encode : Model -> E.Value
-encode model =
+encode : Component -> E.Value
+encode ( name, unit ) =
     let
-        ( name, unit ) =
-            model.component
-
         ( unitStr, value ) =
             getUnitValues unit
     in
@@ -115,7 +111,9 @@ type Msg
     | SelectUnit Unit
     | SaveComponent ( Name, Unit )
     | Cancel
+    | ToRemoveMode
     | DeleteComponent Name
+    | OpenComponentCreator
 
 
 type Action
@@ -128,54 +126,147 @@ update : Msg -> Model -> ( Model, Action )
 update msg model =
     case msg of
         ToNameEditMode ->
-            ( { model
-                | mode =
-                    NameEdit <|
-                        Tuple.first
-                            model.component
-              }
-            , NoOp
-            )
+            case model of
+                Defined ( component, mode ) ->
+                    let
+                        ( name, _ ) =
+                            component
+                    in
+                    ( Defined ( component, NameEdit name )
+                    , NoOp
+                    )
+
+                New mode ->
+                    ( model, NoOp )
 
         InputName editable ->
-            ( { model
-                | mode =
-                    NameEdit
-                        editable
-              }
-            , NoOp
-            )
+            case model of
+                Defined ( component, mode ) ->
+                    let
+                        ( name, _ ) =
+                            component
+                    in
+                    ( Defined
+                        ( component
+                        , case mode of
+                            Remove _ ->
+                                Remove editable
+
+                            _ ->
+                                NameEdit editable
+                        )
+                    , NoOp
+                    )
+
+                New mode ->
+                    case mode of
+                        Open ( name, unit ) ->
+                            ( New <|
+                                Open ( editable, unit )
+                            , NoOp
+                            )
+
+                        _ ->
+                            ( model, NoOp )
 
         ToUnitEditMode ->
-            let
-                ( _, unit ) =
-                    model.component
-            in
-            ( { model
-                | mode = UnitEdit unit
-              }
-            , NoOp
-            )
+            case model of
+                Defined ( component, mode ) ->
+                    let
+                        ( _, unit ) =
+                            component
+                    in
+                    ( Defined
+                        ( component, UnitEdit unit )
+                    , NoOp
+                    )
+
+                New mode ->
+                    ( model, NoOp )
 
         SelectUnit selected ->
-            ( { model
-                | mode = UnitEdit selected
-              }
-            , NoOp
-            )
+            case model of
+                Defined ( component, mode ) ->
+                    ( Defined
+                        ( component, UnitEdit selected )
+                    , NoOp
+                    )
+
+                New mode ->
+                    case mode of
+                        Open ( name, _ ) ->
+                            ( New <|
+                                Open
+                                    ( name
+                                    , Just selected
+                                    )
+                            , NoOp
+                            )
+
+                        _ ->
+                            ( model, NoOp )
 
         SaveComponent ( name, unit ) ->
-            ( { model
-                | component = ( name, unit )
-              }
-            , Save
-            )
+            case model of
+                Defined _ ->
+                    let
+                        component =
+                            ( name, unit )
+                    in
+                    ( Defined <|
+                        ( component, Normal )
+                    , Save
+                    )
+
+                New _ ->
+                    ( New <|
+                        Created ( name, unit )
+                    , Save
+                    )
 
         Cancel ->
-            ( { model | mode = Normal }, NoOp )
+            case model of
+                Defined ( component, _ ) ->
+                    ( Defined <|
+                        ( component, Normal )
+                    , NoOp
+                    )
+
+                New _ ->
+                    ( New Closed, NoOp )
+
+        ToRemoveMode ->
+            case model of
+                Defined ( ( name, unit ), _ ) ->
+                    ( Defined
+                        ( ( name, unit ), Remove name )
+                    , NoOp
+                    )
+
+                _ ->
+                    ( model, NoOp )
 
         DeleteComponent name ->
-            ( model, Delete )
+            case model of
+                Defined ( component, _ ) ->
+                    ( Defined <|
+                        ( component, Normal )
+                    , Delete
+                    )
+
+                New _ ->
+                    ( model, NoOp )
+
+        OpenComponentCreator ->
+            case model of
+                New _ ->
+                    ( New <|
+                        Open ( "", Nothing )
+                    , NoOp
+                    )
+
+                _ ->
+                    ( model, NoOp )
 
 
 
@@ -184,17 +275,98 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    let
-        mode =
-            model.mode
+    case model of
+        Defined ( component, mode ) ->
+            viewDefined ( component, mode )
 
-        ( name, unit ) =
-            model.component
-    in
-    li []
-        [ viewName name mode unit
-        , viewUnit unit name mode
+        New mode ->
+            viewNew mode
+
+
+viewNew : State -> Html Msg
+viewNew mode =
+    case mode of
+        Open ( editable, selected ) ->
+            div []
+                [ Html.form
+                    [ class "pure-form" ]
+                    [ viewFieldset editable selected ]
+                ]
+
+        _ ->
+            div []
+                [ button
+                    [ class <|
+                        "pure-button"
+                            ++ " pure-button-warning"
+                    , onClick OpenComponentCreator
+                    ]
+                    [ text "Add component" ]
+                ]
+
+
+viewFieldset : Name -> Maybe Unit -> Html Msg
+viewFieldset editable selected =
+    fieldset []
+        [ viewNameInput
+            InputName
+            editable
+        , viewUnitDropdown
+            SelectUnit
+            selected
+        , viewSaveButton
+            (case selected of
+                Just unit ->
+                    if isValidName editable then
+                        Functional
+                            ( editable, unit )
+
+                    else
+                        Disabled
+
+                Nothing ->
+                    Disabled
+            )
+        , viewCancelButton Cancel
         ]
+
+
+viewDefined : ( Component, Mode ) -> Html Msg
+viewDefined ( ( name, unit ), mode ) =
+    case mode of
+        Remove editable ->
+            Html.form
+                [ class "pure-form" ]
+                [ viewNameInput InputName editable
+                , viewDeleteButton <|
+                    if editable == name then
+                        Functional ( editable, unit )
+
+                    else
+                        Disabled
+                , viewCancelButton Cancel
+                ]
+
+        _ ->
+            li [] <|
+                List.append
+                    [ viewName name mode unit
+                    , viewUnit unit name mode
+                    ]
+                <|
+                    case mode of
+                        Normal ->
+                            [ button
+                                [ class <|
+                                    "pure-button"
+                                        ++ " button-secondary"
+                                , onClick ToRemoveMode
+                                ]
+                                [ text "Remove" ]
+                            ]
+
+                        _ ->
+                            []
 
 
 viewName : Name -> Mode -> Unit -> Html Msg
@@ -344,6 +516,30 @@ viewUnitMember selectMsg member selected =
 type ButtonState
     = Functional ( Name, Unit )
     | Disabled
+
+
+viewDeleteButton : ButtonState -> Html Msg
+viewDeleteButton state =
+    button
+        (type_ "submit"
+            :: (case state of
+                    Functional ( name, _ ) ->
+                        [ class <|
+                            "pure-button"
+                                ++ " pure-button-primary"
+                        , onClick <|
+                            DeleteComponent name
+                        ]
+
+                    Disabled ->
+                        [ class <|
+                            "pure-button"
+                                ++ " pure-button-primary"
+                        , disabled True
+                        ]
+               )
+        )
+        [ text "Delete" ]
 
 
 viewSaveButton : ButtonState -> Html Msg
