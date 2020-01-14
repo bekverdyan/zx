@@ -2,14 +2,12 @@ module Device.Channel exposing
     ( Model
     , Msg
     , decoder
-    ,  encode
-       -- , newChannels
-
+    , encode
     , update
     , view
     )
 
-import Assets as Assets
+import Assets.Component as Component
 import Html exposing (..)
 import Json.Decode as D
 import Json.Encode as E
@@ -40,7 +38,7 @@ type alias Index =
 
 
 type alias Component =
-    Assets.Component
+    Component.Component
 
 
 
@@ -81,44 +79,34 @@ channelsOf actual defined =
     ( actual, defined )
 
 
+channelOf : Index -> List (Maybe Component) -> Channel
+channelOf index components =
+    ( index, filterValidComponents components )
+
+
 decodeChannel : D.Decoder Channel
 decodeChannel =
-    D.map2 ( Index, unitFrom )
+    D.map2 channelOf
         (D.field "index" D.int)
-        (D.field "component" decodeComponent)
+        (D.field "components" <|
+            D.list Component.decoder
+        )
 
 
-decodeComponent : D.Decoder Compoent
-decodeComponent =
-    D.map2 ( Name, unitFrom )
-        (D.field "name" D.string)
-        (D.field "unit" decodeUnit)
+filterValidComponents :
+    List (Maybe Component)
+    -> List Component
+filterValidComponents components =
+    List.filterMap
+        (\value ->
+            case value of
+                Just component ->
+                    Just component
 
-
-decodeUnit : D.Decoder Unit
-decodeUnit =
-    D.map2 unitFrom
-        (D.field "name" D.string)
-        (D.field "value" D.int)
-
-
-unitFrom : String -> Int -> Maybe Unit
-unitFrom name value =
-    case name of
-        "liter" ->
-            Just <| Liter value
-
-        "gram" ->
-            Just <| Gram value
-
-        "kilowatt" ->
-            Just <| Kilowatt value
-
-        "meter" ->
-            Just <| Meter value
-
-        _ ->
-            Nothing
+                Nothing ->
+                    Nothing
+        )
+        components
 
 
 
@@ -129,33 +117,23 @@ encode : Model -> E.Value
 encode ( actual, defined ) =
     E.object
         [ ( "actual", E.int actual )
+        , ( "defined", E.list encodeChannel defined )
+        ]
 
-        -- , ( "defined", E.list <| encodeComponent defined )
+
+encodeChannel : Channel -> E.Value
+encodeChannel ( index, components ) =
+    E.object
+        [ ( "index", E.int index )
+        , ( "components"
+          , E.list
+                Component.encode
+                components
+          )
         ]
 
 
 
---
--- encodeResource : Resource -> E.Value
--- encodeResource resource =
---     E.object
---         [ ( "name", E.string <| Tuple.first resource ) ]
---
---
--- encodeIngredient : Ingredient -> E.Value
--- encodeIngredient ingredient =
---     E.object
---         [ ( "resource", encodeResource <| Tuple.first ingredient )
---         , ( "portion", E.int <| Tuple.second ingredient )
---         ]
--- encodeComponent : Component -> E.Value
--- encodeComponent (name, unit) =
--- case
--- E.object
---     [ ( String.fromInt <| Tuple.first channel
---       , E.list encodeIngredient <| Tuple.second channel
---       )
---     ]
 -- VIEW
 
 

@@ -1,5 +1,6 @@
 module Assets.Component exposing
-    ( Model
+    ( Component
+    , Model
     , Msg
     , decoder
     , encode
