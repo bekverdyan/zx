@@ -3,6 +3,7 @@ module Device.Channel exposing
     , Msg
     , decoder
     , encode
+    , init
     , update
     , view
     )

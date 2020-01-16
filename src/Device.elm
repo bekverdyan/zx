@@ -155,7 +155,7 @@ newDevice deviceType salt branch =
         settings =
             case deviceType of
                 Washbox ->
-                    Channels <| Channel.newChannels 0
+                    Channels <| Channel.init 0
 
                 Exchange ->
                     Configs Config.newConfig

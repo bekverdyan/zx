@@ -336,6 +336,9 @@ update msg model =
                             in
                             ( { newModel | editor = editorModel }, cmdMsg )
 
+                Editor.ComponentMsg componentMsg ->
+                    ( model, Cmd.none )
+
         DashboardMsg dashboardMsg ->
             case dashboardMsg of
                 Dashboard.NewBranch ->
@@ -772,7 +775,7 @@ removeBranch id branches =
 
 view : Model -> Document Msg
 view model =
-    { title = "Դատարկ մարդ"
+    { title = "ZX"
     , body =
         [ div [ id "layout" ]
             [ a

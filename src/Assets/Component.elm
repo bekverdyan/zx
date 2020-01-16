@@ -2,8 +2,11 @@ module Assets.Component exposing
     ( Component
     , Model
     , Msg
+    , Name
     , decoder
     , encode
+    , init
+    , initCreator
     , update
     , view
     )
@@ -17,7 +20,7 @@ import Json.Encode as E
 
 
 type Model
-    = Defined ( Component, Mode )
+    = Defined ( Int, Component, Mode )
     | New State
 
 
@@ -49,6 +52,24 @@ type Unit
     | Meter Float
 
 
+
+-- INIT
+
+
+init : Int -> Component -> Model
+init index component =
+    Defined ( index, component, Normal )
+
+
+initCreator : Model
+initCreator =
+    New Closed
+
+
+
+-- ENCODE
+
+
 encode : Component -> E.Value
 encode ( name, unit ) =
     let
@@ -78,6 +99,10 @@ getUnitValues unit =
             ( "Meter", value )
 
 
+
+-- DECODE
+
+
 decoder : D.Decoder (Maybe Component)
 decoder =
     D.map3 createComponent
@@ -105,6 +130,10 @@ createComponent name unit value =
             Nothing
 
 
+
+-- UPDATE
+
+
 type Msg
     = ToNameEditMode
     | InputName Name
@@ -128,12 +157,12 @@ update msg model =
     case msg of
         ToNameEditMode ->
             case model of
-                Defined ( component, mode ) ->
+                Defined ( index, component, mode ) ->
                     let
                         ( name, _ ) =
                             component
                     in
-                    ( Defined ( component, NameEdit name )
+                    ( Defined ( index, component, NameEdit name )
                     , NoOp
                     )
 
@@ -142,13 +171,14 @@ update msg model =
 
         InputName editable ->
             case model of
-                Defined ( component, mode ) ->
+                Defined ( index, component, mode ) ->
                     let
                         ( name, _ ) =
                             component
                     in
                     ( Defined
-                        ( component
+                        ( index
+                        , component
                         , case mode of
                             Remove _ ->
                                 Remove editable
@@ -172,13 +202,13 @@ update msg model =
 
         ToUnitEditMode ->
             case model of
-                Defined ( component, mode ) ->
+                Defined ( index, component, mode ) ->
                     let
                         ( _, unit ) =
                             component
                     in
                     ( Defined
-                        ( component, UnitEdit unit )
+                        ( index, component, UnitEdit unit )
                     , NoOp
                     )
 
@@ -187,9 +217,9 @@ update msg model =
 
         SelectUnit selected ->
             case model of
-                Defined ( component, mode ) ->
+                Defined ( index, component, mode ) ->
                     ( Defined
-                        ( component, UnitEdit selected )
+                        ( index, component, UnitEdit selected )
                     , NoOp
                     )
 
@@ -209,13 +239,13 @@ update msg model =
 
         SaveComponent ( name, unit ) ->
             case model of
-                Defined _ ->
+                Defined ( index, _, _ ) ->
                     let
                         component =
                             ( name, unit )
                     in
                     ( Defined <|
-                        ( component, Normal )
+                        ( index, component, Normal )
                     , Save
                     )
 
@@ -227,9 +257,9 @@ update msg model =
 
         Cancel ->
             case model of
-                Defined ( component, _ ) ->
+                Defined ( index, component, _ ) ->
                     ( Defined <|
-                        ( component, Normal )
+                        ( index, component, Normal )
                     , NoOp
                     )
 
@@ -238,9 +268,9 @@ update msg model =
 
         ToRemoveMode ->
             case model of
-                Defined ( ( name, unit ), _ ) ->
+                Defined ( index, ( name, unit ), _ ) ->
                     ( Defined
-                        ( ( name, unit ), Remove name )
+                        ( index, ( name, unit ), Remove name )
                     , NoOp
                     )
 
@@ -249,9 +279,9 @@ update msg model =
 
         DeleteComponent name ->
             case model of
-                Defined ( component, _ ) ->
+                Defined ( index, component, _ ) ->
                     ( Defined <|
-                        ( component, Normal )
+                        ( index, component, Normal )
                     , Delete
                     )
 
@@ -271,14 +301,14 @@ update msg model =
 
 
 
--- VIEW UNIT
+-- VIEW
 
 
 view : Model -> Html Msg
 view model =
     case model of
-        Defined ( component, mode ) ->
-            viewDefined ( component, mode )
+        Defined ( index, component, mode ) ->
+            viewDefined ( index, component, mode )
 
         New mode ->
             viewNew mode
@@ -332,38 +362,51 @@ viewFieldset editable selected =
         ]
 
 
-viewDefined : ( Component, Mode ) -> Html Msg
-viewDefined ( ( name, unit ), mode ) =
+viewDefined : ( Int, Component, Mode ) -> Html Msg
+viewDefined ( index, ( name, unit ), mode ) =
+    let
+        attributes =
+            case modBy 2 index of
+                1 ->
+                    [ class "pure-table-odd" ]
+
+                _ ->
+                    []
+    in
     case mode of
         Remove editable ->
-            Html.form
-                [ class "pure-form" ]
-                [ viewNameInput InputName editable
-                , viewDeleteButton <|
-                    if editable == name then
-                        Functional ( editable, unit )
+            tr attributes
+                [ Html.form
+                    [ class "pure-form" ]
+                    [ viewNameInput InputName editable
+                    , viewDeleteButton <|
+                        if editable == name then
+                            Functional ( editable, unit )
 
-                    else
-                        Disabled
-                , viewCancelButton Cancel
+                        else
+                            Disabled
+                    , viewCancelButton Cancel
+                    ]
                 ]
 
         _ ->
-            li [] <|
+            tr attributes <|
                 List.append
-                    [ viewName name mode unit
-                    , viewUnit unit name mode
+                    [ td [] [ viewName name mode unit ]
+                    , td [] [ viewUnit unit name mode ]
                     ]
                 <|
                     case mode of
                         Normal ->
-                            [ button
-                                [ class <|
-                                    "pure-button"
-                                        ++ " button-secondary"
-                                , onClick ToRemoveMode
+                            [ td []
+                                [ button
+                                    [ class <|
+                                        "pure-button"
+                                            ++ " button-secondary"
+                                    , onClick ToRemoveMode
+                                    ]
+                                    [ text "Remove" ]
                                 ]
-                                [ text "Remove" ]
                             ]
 
                         _ ->
@@ -382,20 +425,18 @@ viewName name mode unit =
 
 viewNameNormalMode : Name -> Html Msg
 viewNameNormalMode name =
-    li []
-        [ label []
-            [ a
-                [ class "pure-button"
-                , href "#"
-                , onClick ToNameEditMode
-                ]
-                [ text <|
-                    if isValidName name then
-                        name
+    label []
+        [ a
+            [ class "pure-button"
+            , href "#"
+            , onClick ToNameEditMode
+            ]
+            [ text <|
+                if isValidName name then
+                    name
 
-                    else
-                        " "
-                ]
+                else
+                    " "
             ]
         ]
 
@@ -438,15 +479,13 @@ viewUnit selected name mode =
 
 viewUnitNormalMode : Unit -> Html Msg
 viewUnitNormalMode selected =
-    li []
-        [ label []
-            [ a
-                [ class "pure-button"
-                , href "#"
-                , onClick ToUnitEditMode
-                ]
-                [ text <| unitToString selected
-                ]
+    label []
+        [ a
+            [ class "pure-button"
+            , href "#"
+            , onClick ToUnitEditMode
+            ]
+            [ text <| unitToString selected
             ]
         ]
 
@@ -477,7 +516,8 @@ viewUnitDropdown selectMsg selected =
 
 viewUnitEditMode : Unit -> Name -> Html Msg
 viewUnitEditMode selected name =
-    li []
+    Html.form
+        [ class "pure-form" ]
         [ viewUnitDropdown SelectUnit <| Just selected
         , viewSaveButton <|
             Functional ( name, selected )
@@ -508,10 +548,6 @@ viewUnitMember selectMsg member selected =
                 attributes
         )
         [ text <| unitToString member ]
-
-
-
--- VIEW BUTTONS
 
 
 type ButtonState
