@@ -44,11 +44,27 @@ type alias Model =
 
 
 type alias Branches =
-    Dict Branch.Identifier Branch.Branch
+    Dict BranchId Branch
 
 
 type alias Devices =
-    Dict Device.Identifier Device.Device
+    Dict DeviceId Device
+
+
+type alias DeviceId =
+    Device.Identifier
+
+
+type alias BranchId =
+    Branch.Identifier
+
+
+type alias Device =
+    Device.Device
+
+
+type alias Branch =
+    Branch.Branch
 
 
 
@@ -58,12 +74,12 @@ type alias Devices =
 type Msg
     = PullDevices E.Value
     | PullBranches E.Value
-    | PushDevices
-    | PushBranches
-    | AddDevice ( Device.Device, Branch.Branch )
+    | PushDevices (Dict DeviceId Device)
+    | PushBranches (Dict BranchId Branch)
+    | AddDevice ( Device, Branch )
 
 
-update : Msg -> Model -> ( Model, List (Cmd Msg) )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PullDevices encoded ->
@@ -80,16 +96,16 @@ update msg model =
             , Cmd.none
             )
 
-        PushDevices ->
+        PushDevices devices ->
             ( model
             , saveDevices <|
-                encodeDevices model.devices
+                encodeDevices devices
             )
 
-        PushBranches ->
+        PushBranches branches ->
             ( model
             , saveBranches <|
-                encodeBranches model.branches
+                encodeBranches branches
             )
 
         AddDevice ( device, container ) ->
@@ -112,7 +128,7 @@ update msg model =
                         container
                         branches
               }
-            , Cmd.batch [ PushDevices, PushBranches ]
+            , Cmd.batch []
             )
 
 
