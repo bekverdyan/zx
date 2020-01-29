@@ -214,6 +214,8 @@ type Msg
     | PullBranches E.Value
     | EditorMsg Editor.Msg
     | DashboardMsg Dashboard.Msg
+    | AddDevice Device
+    | AddBranch Branch
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -366,6 +368,68 @@ update msg model =
                     in
                     ( { model | editor = editor }, Cmd.none )
 
+        AddBranch branch ->
+            let
+                branches =
+                    case model.branches of
+                        Just value ->
+                            Just <|
+                                Dict.insert
+                                    branch.id
+                                    branch
+                                    value
+
+                        Nothing ->
+                            Just <|
+                                Dict.singleton
+                                    branch.id
+                                    branch
+
+                devices =
+                    updateBranchRefs branch model.devices
+            in
+            ( { model
+                | branches = branches
+                , devices = devices
+              }
+            , Cmd.batch
+                [ pushBranches branches
+                , pushDevices devices
+                ]
+            )
+
+        AddDevice device ->
+            let
+                devices =
+                    case model.devices of
+                        Just value ->
+                            Just <|
+                                Dict.insert
+                                    device.id
+                                    device
+                                    value
+
+                        Nothing ->
+                            Just <|
+                                Dict.singleton
+                                    device.id
+                                    device
+
+                branches =
+                    updateDeviceRef
+                        device
+                        model.branches
+            in
+            ( { model
+                | devices = devices
+                , branches = branches
+              }
+            , Cmd.batch
+                [ pushDevices devices
+                , pushBranches branches
+                ]
+            )
+
 
 handleBranchSelection :
     Branch.Identifier
@@ -460,7 +524,10 @@ updateDeviceRef device values =
                             }
                     in
                     Just <|
-                        Dict.insert updated.id updated branches
+                        Dict.insert
+                            updated.id
+                            updated
+                            branches
 
                 Nothing ->
                     Nothing
